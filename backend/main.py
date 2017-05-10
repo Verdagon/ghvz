@@ -78,6 +78,7 @@ methods = {
   'createChatRoom': api_calls.AddChatRoom,
   'addPlayerToChat': api_calls.AddPlayerToChat,
   'sendChatMessage': api_calls.SendChatMessage,
+  'infect': api_calls.Infect,
   'addRewardCategory': api_calls.AddRewardCategory,
   'updateRewardCategory': api_calls.UpdateRewardCategory,
   'addReward': api_calls.AddReward,
