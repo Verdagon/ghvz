@@ -727,6 +727,64 @@ def AddPlayerToChat(request, firebase):
   results.append(firebase.put('/games/%s/chatRooms' % game, chat, True))
 
 
+def Infect(request, firebase):
+  """Infect a player(otherPlayerId) and update access to chat rooms accordingly.
+
+  Validation:
+    playerId:
+    otherPlayerId:
+    gameId:
+
+    
+  """
+  results = []
+  valid_args = ['infectionId', 'playerId', 'otherPlayerId', 'gameId']
+  required_args = ['otherPlayerId', 'gameId']
+  ValidateInputs(request, firebase, required_args, valid_args)
+  playerId = request['playerId']
+  gameId = request['gameId']
+
+  if playerId and firebase.get('/games/%s/players/%s' % (gameId, playerId), None)['canInfect'] != "yes":
+    raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
+ 
+  infectionTime = int(time.time())
+  infecteePlayerId = request['otherPlayerId']
+  infected_data = {
+    'canInfect': 'yes',
+    'allegiance': 'horde',
+  }
+  results.append(firebase.put('/games/%s/players' % gameId, infecteePlayerId, infected_data))
+
+  game_chats = firebase.get('/games/%s/chatRooms' % gameId, None)
+  for chatId in game_chats.keys():
+    current_chat = firebase.get('/chatRooms/%s' % chatId, None)
+    if 'autoRemove' in current_chat.keys() and current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
+      firebase.delete('/chatRooms/%s/memberships' % chatId, infecteePlayerId)
+    elif 'autoAdd' in current_chat.keys() and current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
+      add_player = {
+        'playerId': request.get('playerId', ''),
+        'otherPlayerId': infecteePlayerId,
+        'chatRoomId': chatId,
+      }        
+      AddPlayerToChat(add_player, firebase)
+
+  # Update infections firebase
+  infection_data = {
+    'time': infectionTime
+  }
+
+  if playerId:
+    infection_data['infectorId'] = playerId
+    current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
+    if not current_points:
+      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
+    else:
+      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', current_points + 100))
+
+  results.append(firebase.put('/games/%s/players/%s' % (gameId, infecteePlayerId), 'infections', infection_data))
+  return results
+  # TODO: Create addLife and life code to player mapping
+
 def AddRewardCategory(request, firebase):
   """Add a new reward group.
 
