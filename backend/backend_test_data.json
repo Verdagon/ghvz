@@ -70,7 +70,8 @@
   },
   "guns": {
     "gun-%(ident)s": {
-      "playerId": "player-%(ident)s"
+      "playerId": "player-%(ident)s",
+      "a": true
     }
   },
   "missions": {
@@ -106,7 +107,8 @@
         "server": true,
         "client": false,
         "mobile": false
-    },
+      },
+      "gotEquipment": true,
       "wantsToBeSecretZombie": true
     }
   },
