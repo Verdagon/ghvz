@@ -643,35 +643,35 @@ def SendChatMessage(request, firebase):
 
 
 def Infect(request, firebase):
-  """Infect a player and update access to chat rooms accordingly.
+  """Infect a player(otherPlayerId) and update access to chat rooms accordingly.
 
   Validation:
     playerId:
-    infecteePlayerId:
+    otherPlayerId:
     gameId:
 
     
   """
   results = []
-  valid_args = ['infectionId', 'playerId', 'infecteePlayerId', 'gameId']
-  required_args = ['infecteePlayerId', 'gameId']
+  valid_args = ['infectionId', 'playerId', 'otherPlayerId', 'gameId']
+  required_args = ['otherPlayerId', 'gameId']
   ValidateInputs(request, firebase, required_args, valid_args)
 
   infectionTime = int(time.time())
-  infecteePlayerId = request['infecteePlayerId']
+  infecteePlayerId = request['otherPlayerId']
   gameId = request['gameId']
   infected_data = {
     'canInfect': 'yes',
     'allegiance': 'horde',
   }
-  results.add(firebase.put('/games/%s/players/%s' % (gameId, infecteePlayerId), infected_data))
+  results.append(firebase.put('/games/%s/players' % gameId, infecteePlayerId, infected_data))
 
   game_chats = firebase.get('/games/%s/chatRooms' % gameId, None)
   for chatId in game_chats.keys():
-    current_chat = game_chats[chatId]
-    if current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
+    current_chat = firebase.get('/chatRooms/%s' % chatId, None)
+    if 'autoRemove' in current_chat.keys() and current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
       firebase.delete('/chatRooms/%s/memberships' % chatId, infecteePlayerId)
-    elif current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
+    elif 'autoAdd' in current_chat.keys() and current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
       add_player = {
         'playerId': request.get('playerId', ''),
         'otherPlayerId': infecteePlayerId,
@@ -689,11 +689,11 @@ def Infect(request, firebase):
     infection_data['infectorId'] = playerId
     current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
     if not current_points:
-      results.add(firebase.put('/games/%s/players/%s' % (gameId, playerId), 100))
+      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
     else:
-      results.add(firebase.put('/games/%s/players/%s' % (gameId, playerId), current_points + 100))
+      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', current_points + 100))
 
-  results.add(firebase.put('/games/%s/players/%s/infections' (gameId, infecteePlayerId), infection_data))
+  results.append(firebase.put('/games/%s/players/%s' % (gameId, infecteePlayerId), 'infections', infection_data))
   return results
   # TODO: Create addLife and life code to player mapping
 
