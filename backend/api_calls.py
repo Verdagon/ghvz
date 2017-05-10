@@ -656,10 +656,14 @@ def Infect(request, firebase):
   valid_args = ['infectionId', 'playerId', 'otherPlayerId', 'gameId']
   required_args = ['otherPlayerId', 'gameId']
   ValidateInputs(request, firebase, required_args, valid_args)
+  playerId = request['playerId']
+  gameId = request['gameId']
 
+  if playerId and firebase.get('/games/%s/players/%s' % (gameId, playerId), None)['canInfect'] != "yes":
+    raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
+ 
   infectionTime = int(time.time())
   infecteePlayerId = request['otherPlayerId']
-  gameId = request['gameId']
   infected_data = {
     'canInfect': 'yes',
     'allegiance': 'horde',
@@ -679,7 +683,6 @@ def Infect(request, firebase):
       }        
       AddPlayerToChat(add_player, firebase)
 
-  playerId = request['playerId']
   # Update infections firebase
   infection_data = {
     'time': infectionTime
