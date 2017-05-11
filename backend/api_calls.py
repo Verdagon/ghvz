@@ -16,7 +16,7 @@ class InvalidInputError(Exception):
 ENTITY_TYPES = (
     'chatRoomId', 'gameId', 'groupId', 'gunId', 'messageId',
     'missionId', 'playerId', 'rewardCategoryId', 'rewardId', 'userId',
-    'notificationId')
+    'notificationId', 'infectionId')
 
 # Map all expected args to an entity type
 KEY_TO_ENTITY = {a: a for a in ENTITY_TYPES}
@@ -759,16 +759,17 @@ def Infect(request, firebase):
     A non-admin attempting to infect a player must have privileges to infect.
 
   Args:
-    playerId: The player doing the infecting, null if this is an admin.
+    playerId: The player doing the infecting, TODO: null if this is an admin.
     otherPlayerId: The player to be infected.
+    infectionId: The ID of the infection to add.
 
   Firebase entries:
     /games/%(gameId)/players/%(playerId)
     /games/%(gameId)/chatRooms/
   """
   results = []
-  valid_args = ['playerId', 'otherPlayerId']
-  required_args = ['otherPlayerId']
+  valid_args = ['playerId', 'otherPlayerId', 'infectionId']
+  required_args = list(valid_args)
   ValidateInputs(request, firebase, required_args, valid_args)
   playerId = request['playerId']
   infecteePlayerId = request['otherPlayerId']
@@ -806,9 +807,10 @@ def Infect(request, firebase):
   infection_data = {
       'time': infectionTime,
   }
+  infectionId = request['infectionId']
   if not secretZombieInfection:
     infection_data['infectorPlayerId'] = playerId
-    results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
+    results.append(firebase.put('/games/%s/players/%s/infections' % (gameId, infecteePlayerId), infectionId, infection_data))
     infected_player_data['allegiance'] = constants.ALLEGIANCES[0] 
   else:
     # Turn secret zombie into regular by changing their allegiance
