@@ -728,40 +728,46 @@ def AddPlayerToChat(request, firebase):
   results.append(firebase.put('/games/%s/chatRooms' % game, chat, True))
 
 
+# TODO: Include Infect in backend tests.
 def Infect(request, firebase):
-  """Infect a player(otherPlayerId) and update access to chat rooms accordingly.
+  """Infect a player and update membership in groups accordingly.
 
   Validation:
-    playerId:
-    otherPlayerId:
-    gameId:
+    A non-admin attempting to infect a player must have privileges to infect.
 
-    
+  Args:
+    playerId: The player doing the infecting, null if this is an admin.
+    otherPlayerId: The player to be infected.
+
+  Firebase entries:
+    /games/%(gameId)/players/$(playerId)
+    /games/%(gameId)/chatRooms/
   """
   results = []
-  valid_args = ['infectionId', 'playerId', 'otherPlayerId', 'gameId']
-  required_args = ['otherPlayerId', 'gameId']
+  valid_args = ['playerId', 'otherPlayerId']
+  required_args = ['otherPlayerId']
   ValidateInputs(request, firebase, required_args, valid_args)
   playerId = request['playerId']
   gameId = request['gameId']
 
-  if playerId and firebase.get('/games/%s/players/%s' % (gameId, playerId), None)['canInfect'] != "yes":
+  # TODO: Support explicit admin
+  if playerId and firebase.get('/games/%s/players/%s' % (gameId, playerId), 'canInfect'):
     raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
  
   infectionTime = int(time.time())
   infecteePlayerId = request['otherPlayerId']
   infected_data = {
-    'canInfect': 'yes',
+    'canInfect': true,
     'allegiance': 'horde',
   }
-  results.append(firebase.put('/games/%s/players' % gameId, infecteePlayerId, infected_data))
+  results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_data))
 
   game_chats = firebase.get('/games/%s/chatRooms' % gameId, None)
-  for chatId in game_chats.keys():
+  for chatId in game_chats:
     current_chat = firebase.get('/chatRooms/%s' % chatId, None)
-    if 'autoRemove' in current_chat.keys() and current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
+    if 'autoRemove' in current_chat and current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
       firebase.delete('/chatRooms/%s/memberships' % chatId, infecteePlayerId)
-    elif 'autoAdd' in current_chat.keys() and current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
+    elif 'autoAdd' in current_chat and current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
       add_player = {
         'playerId': request.get('playerId', ''),
         'otherPlayerId': infecteePlayerId,
@@ -775,7 +781,7 @@ def Infect(request, firebase):
   }
 
   if playerId:
-    infection_data['infectorId'] = playerId
+    infection_data['infectorPlayerId'] = playerId
     current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
     if not current_points:
       results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
