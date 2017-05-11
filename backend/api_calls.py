@@ -787,6 +787,9 @@ def Infect(request, firebase):
     infection_data['infectorPlayerId'] = playerId
     results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
     infected_player_data['allegiance'] = constants.ALLEGIANCES[0] 
+  else:
+    # Turn secret zombie into regular by changing their allegiance
+    pass
 
   results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
   return results
