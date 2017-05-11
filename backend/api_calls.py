@@ -16,7 +16,7 @@ class InvalidInputError(Exception):
 ENTITY_TYPES = (
     'chatRoomId', 'gameId', 'groupId', 'gunId', 'messageId',
     'missionId', 'playerId', 'rewardCategoryId', 'rewardId', 'userId',
-    'notificationId', 'infectionId')
+    'notificationId')
 
 # Map all expected args to an entity type
 KEY_TO_ENTITY = {a: a for a in ENTITY_TYPES}
@@ -765,10 +765,11 @@ def Infect(request, firebase):
 
   Firebase entries:
     /games/%(gameId)/players/%(playerId)
-    /games/%(gameId)/chatRooms/
+    /games/%(gameId)/groups
+    /groups/%(groupId)
   """
   results = []
-  valid_args = ['playerId', 'otherPlayerId', 'infectionId']
+  valid_args = ['playerId', 'otherPlayerId']
   required_args = list(valid_args)
   ValidateInputs(request, firebase, required_args, valid_args)
   playerId = request['playerId']
@@ -776,24 +777,11 @@ def Infect(request, firebase):
   gameId = firebase.get('/players/%s' % infecteePlayerId, 'gameId')
 
   # TODO: Explicitly support admin infections
-  if firebase.get('/games/%s/players/%s' % (gameId, playerId), 'canInfect'):
+  if not firebase.get('/players/%s' % (playerId), 'canInfect'):
     raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
   
-  secretZombieInfection = False if firebase.get('/games/%s/players/%s' % (gameId, playerId), allegiance) == constants.ALLEGIANCES[1] else True
+  secretZombieInfection = True if firebase.get('/games/%s/players/%s' % (gameId, playerId), 'allegiance') == constants.ALLEGIANCES[1] else False
   infectionTime = int(time.time())
-
-  game_chats = firebase.get('/games/%s/chatRooms' % gameId, None)
-  for chatId in game_chats:
-    current_chat = firebase.get('/chatRooms/%s' % chatId, None)
-    if 'autoRemove' in current_chat and current_chat['autoRemove'] and current_chat['allegianceFilter'] is constants.ALLEGIANCES[1]:
-      firebase.delete('/chatRooms/%s/memberships' % chatId, infecteePlayerId)
-    elif 'autoAdd' in current_chat and current_chat['autoAdd'] and current_chat['allegianceFilter'] is not constants.ALLEGIANCES[1]:
-      add_player = {
-        'playerId': request.get('playerId', ''),
-        'otherPlayerId': infecteePlayerId,
-        'chatRoomId': chatId,
-      }        
-      AddPlayerToChat(add_player, firebase)
 
   current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
   if not current_points:
@@ -807,16 +795,28 @@ def Infect(request, firebase):
   infection_data = {
       'time': infectionTime,
   }
-  infectionId = request['infectionId']
+  infectionId = infectionTime # TODO: Accept an infection ID instead of using the timestamp
+
+  group_update = {
+    'playerId': playerId,
+    'otherPlayerId': infecteePlayerId,
+  }
   if not secretZombieInfection:
+    for groupId in firebase.get('/games/%s' % gameId, 'groups'):
+      group_update['groupId'] = groupId
+      if constants.ALLEGIANCES[0] in groupId:
+        AddPlayerToGroup(group_update, firebase)
+
     infection_data['infectorPlayerId'] = playerId
     results.append(firebase.put('/games/%s/players/%s/infections' % (gameId, infecteePlayerId), infectionId, infection_data))
     infected_player_data['allegiance'] = constants.ALLEGIANCES[0] 
   else:
+    outed_zombie = { 'allegiance': constants.ALLEGIANCES[0] }
     # Turn secret zombie into regular by changing their allegiance
-    pass
+    # TODO: Add former secret zombie to horde groups
+    results.append(firebase.patch('/games/%s/players/%s' % (gameId, playerId), outed_zombie))
 
-  results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
+  results.append(firebase.patch('/games/%s/players/%s' % (gameId, infecteePlayerId), infected_player_data))
   return results
   # TODO: Create addLife and life code to player mapping
 
