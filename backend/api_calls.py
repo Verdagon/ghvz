@@ -740,7 +740,7 @@ def Infect(request, firebase):
     otherPlayerId: The player to be infected.
 
   Firebase entries:
-    /games/%(gameId)/players/$(playerId)
+    /games/%(gameId)/players/%(playerId)
     /games/%(gameId)/chatRooms/
   """
   results = []
@@ -748,19 +748,15 @@ def Infect(request, firebase):
   required_args = ['otherPlayerId']
   ValidateInputs(request, firebase, required_args, valid_args)
   playerId = request['playerId']
-  gameId = request['gameId']
-
-  # TODO: Support explicit admin
-  if playerId and firebase.get('/games/%s/players/%s' % (gameId, playerId), 'canInfect'):
-    raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
- 
-  infectionTime = int(time.time())
   infecteePlayerId = request['otherPlayerId']
-  infected_data = {
-    'canInfect': true,
-    'allegiance': 'horde',
-  }
-  results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_data))
+  gameId = firebase.get('/players/%s' % infecteePlayerId, 'gameId')
+
+  # TODO: Explicitly support admin infections
+  if firebase.get('/games/%s/players/%s' % (gameId, playerId), 'canInfect'):
+    raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
+  
+  secretZombieInfection = False if firebase.get('/games/%s/players/%s' % (gameId, playerId), allegiance) == constants.ALLEGIANCES[1] else True
+  infectionTime = int(time.time())
 
   game_chats = firebase.get('/games/%s/chatRooms' % gameId, None)
   for chatId in game_chats:
@@ -775,20 +771,24 @@ def Infect(request, firebase):
       }        
       AddPlayerToChat(add_player, firebase)
 
-  # Update infections firebase
-  infection_data = {
-    'time': infectionTime
+  current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
+  if not current_points:
+    results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
+  else:
+    results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', current_points + 100))
+
+  infected_player_data = {
+    'canInfect': True,
   }
-
-  if playerId:
+  infection_data = {
+      'time': infectionTime,
+  }
+  if not secretZombieInfection:
     infection_data['infectorPlayerId'] = playerId
-    current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
-    if not current_points:
-      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
-    else:
-      results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', current_points + 100))
+    results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
+    infected_player_data['allegiance'] = constants.ALLEGIANCES[0] 
 
-  results.append(firebase.put('/games/%s/players/%s' % (gameId, infecteePlayerId), 'infections', infection_data))
+  results.append(firebase.patch('/games/%s/players' % gameId, infecteePlayerId, infected_player_data))
   return results
   # TODO: Create addLife and life code to player mapping
 
