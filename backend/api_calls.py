@@ -708,7 +708,7 @@ def AddPlayerToGroup(request, firebase):
     otherPlayerId: The player being added.
 
   Firebase entries:
-    /chatRooms/%(chatRoomId)/memberships/%(playerId)
+    /groups/%(groupId)/players/%(playerId)
   """
   valid_args = ['groupId', 'playerId', 'otherPlayerId']
   required_args = ['groupId', 'otherPlayerId']
