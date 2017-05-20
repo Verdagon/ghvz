@@ -83,6 +83,7 @@ methods = {
   'updateChatRoom': api_calls.UpdateChatRoom,
   'sendChatMessage': api_calls.SendChatMessage,
   'ackChatMessage': api_calls.AckChatMessage,
+  'infect': api_calls.Infect,
   'addRewardCategory': api_calls.AddRewardCategory,
   'updateRewardCategory': api_calls.UpdateRewardCategory,
   'addReward': api_calls.AddReward,
