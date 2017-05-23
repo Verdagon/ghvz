@@ -919,6 +919,75 @@ def SetPlayerAllegiance(firebase, player_id, allegiance, can_infect):
   return results
 
 
+# TODO: Include Infect in backend tests.
+def Infect(request, firebase):
+  """Infect a player and update membership in groups accordingly.
+
+  Validation:
+    A non-admin attempting to infect a player must have privileges to infect.
+
+  Args:
+    playerId: The player doing the infecting, TODO: null if this is an admin.
+    otherPlayerId: The player to be infected.
+    infectionId: The ID of the infection to add.
+
+  Firebase entries:
+    /games/%(gameId)/players/%(playerId)
+    /games/%(gameId)/groups
+    /groups/%(groupId)
+  """
+  results = []
+  valid_args = ['playerId', 'otherPlayerId']
+  required_args = list(valid_args)
+  ValidateInputs(request, firebase, required_args, valid_args)
+  playerId = request['playerId']
+  infecteePlayerId = request['otherPlayerId']
+  gameId = firebase.get('/players/%s' % infecteePlayerId, 'gameId')
+
+  # TODO: Explicitly support admin infections
+  if not firebase.get('/players/%s' % (playerId), 'canInfect'):
+    raise InvalidInputError('The alleged infector %s does not have the ability to infect.' % playerId)
+  
+  secretZombieInfection = True if firebase.get('/games/%s/players/%s' % (gameId, playerId), 'allegiance') == constants.ALLEGIANCES[1] else False
+  infectionTime = int(time.time())
+
+  current_points = firebase.get('/games/%s/players/%s' % (gameId, playerId), 'points')
+  if not current_points:
+    results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', 100))
+  else:
+    results.append(firebase.put('/games/%s/players/%s' % (gameId, playerId), 'points', current_points + 100))
+
+  infected_player_data = {
+    'canInfect': True,
+  }
+  infection_data = {
+      'time': infectionTime,
+  }
+  infectionId = infectionTime # TODO: Accept an infection ID instead of using the timestamp
+
+  group_update = {
+    'playerId': playerId,
+    'otherPlayerId': infecteePlayerId,
+  }
+  if not secretZombieInfection:
+    for groupId in firebase.get('/games/%s' % gameId, 'groups'):
+      group_update['groupId'] = groupId
+      if constants.ALLEGIANCES[0] in groupId:
+        AddPlayerToGroup(group_update, firebase)
+
+    infection_data['infectorPlayerId'] = playerId
+    results.append(firebase.put('/games/%s/players/%s/infections' % (gameId, infecteePlayerId), infectionId, infection_data))
+    infected_player_data['allegiance'] = constants.ALLEGIANCES[0] 
+  else:
+    outed_zombie = { 'allegiance': constants.ALLEGIANCES[0] }
+    # Turn secret zombie into regular by changing their allegiance
+    # TODO: Add former secret zombie to horde groups
+    results.append(firebase.patch('/games/%s/players/%s' % (gameId, playerId), outed_zombie))
+
+  results.append(firebase.patch('/games/%s/players/%s' % (gameId, infecteePlayerId), infected_player_data))
+  return results
+  # TODO: Create addLife and life code to player mapping
+
 def AddRewardCategory(request, firebase):
   """Add a new reward group.
 
