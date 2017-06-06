@@ -1479,5 +1479,35 @@ def DumpTestData(request, game_state):
       res[entry] = {r: data[r] for r in data if 'test-' in r}
   return res
 
+def CreateMap(request, game_state):
+  """Creates a new Map with the given mapId associated with the given groupId.
+
+    Validation:
+      groupId must exist
+      mapId must exist
+      name must exist
+
+    Args:
+      groupId: Id uniquely identifying the group the map will be associated with.
+      mapId: Id uniquely identifying the map to be created.
+      name: Name of the map to create
+
+    Firebase entries:
+      /maps/%(mapId)
+  """
+  helpers.ValidateInputs(request, game_state, {
+    'mapId': 'MapId',
+    'groupId': 'GroupId',
+    'name': 'String',
+  })
+
+  map_id = request['mapId']
+
+  if game_state.get('/maps', map_id) is None:
+    put_data = {
+      'groupId': request['groupId'],
+      'name': request['name']
+    }
+    return game_state.put('/maps', map_id, put_data)
 
 # vim:ts=2:sw=2:expandtab

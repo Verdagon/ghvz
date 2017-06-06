@@ -104,6 +104,7 @@ methods = {
   'setAdminContact': api_calls.SetAdminContact,
   'DeleteTestData': api_calls.DeleteTestData,
   'DumpTestData': api_calls.DumpTestData,
+  'createMap': api_calls.CreateMap,
 }
 
 
