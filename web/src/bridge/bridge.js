@@ -130,7 +130,6 @@ class FakeIdGenerator extends IdGenerator {
   let serverMethods = new Map();
 
   // Users
-  serverMethods.set('signIn', {});
   serverMethods.set('register', {
     userId: 'String'
   });
@@ -230,7 +229,7 @@ class FakeIdGenerator extends IdGenerator {
     notes: 'String',
   });
   serverMethods.set('updatePlayer', {
-    playerId: '!PlayerId',
+    playerId: 'PlayerId',
     userId: 'UserId',
     gameId: 'GameId',
     serverTime: '|Timestamp',
@@ -277,7 +276,7 @@ class FakeIdGenerator extends IdGenerator {
     detailsHtml: 'String',
   });
   serverMethods.set('updateMission', {
-    missionId: '!MissionId',
+    missionId: 'MissionId',
     groupId: 'GroupId',
     rsvpersGroupId: 'GroupId',
     gameId: 'GameId',
