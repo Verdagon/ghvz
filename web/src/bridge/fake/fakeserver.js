@@ -15,19 +15,10 @@ class FakeServer {
 
     this.reader = new PathFindingReader(new SimpleReader(this.database));
 
-    this.timeOffset = 0;
-
     this.writer.set(this.reader.getGamePath(null), []);
     this.writer.set(this.reader.getUserPath(null), []);
 
     window.fakeServer = this;
-  }
-  setTimeOffset(args) {
-    let {offsetMs} = args;
-    this.timeOffset = offsetMs;
-  }
-  getTime_() {
-    return new Date().getTime() + this.timeOffset;
   }
   signIn(args) {
     let {userId} = args;
