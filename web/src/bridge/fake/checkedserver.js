@@ -38,4 +38,27 @@ class CheckedServer {
       assert(!found, 'ID is not supposed to exist:', value);
     }
   }
+  
+  signIn(...args) {
+    return this.inner.signIn(...args);
+  }
+  signOut(...args) {
+    return this.inner.signOut(...args);
+  }
+  getSignedInPromise(...args) {
+    return this.inner.getSignedInPromise(...args);
+  }
+  listenToDatabase(...args) {
+    return this.inner.listenToDatabase(...args);
+  }
+  listenToGameAsAdmin(...args) {
+    return this.inner.listenToGameAsAdmin(...args);
+  }
+  listenToGameAsNonAdmin(...args) {
+    return this.inner.listenToGameAsNonAdmin(...args);
+  }
+  setPlayerId(playerId) {
+    return this.inner.setPlayerId(playerId);
+  }
+
 }
