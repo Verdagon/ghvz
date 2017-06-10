@@ -1569,14 +1569,14 @@ def addPoint(request, game_state):
 
   if map_group['ownerPlayerId'] != requestingPlayerId and \
      map_game['adminUsers'][requesting_user_id] is None:
-    return abort(400)
+    return abort(400, 'User does not have access')
 
   # Basic Color verification. Should be a 6 character string composed of only
   # hex digits.
   point_color = request['pointId']
   if len(point_color) != 6 or \
      all(map(lambda x: x in hex_range, list(point_color))):
-    return abort(400, 'Color was formatted incorrectly... dawg. Blarg')
+    return abort(400, 'Color was formatted incorrectly... dawg.')
 
   point_id = request['pointId']
   if game_state.get('/maps/%s/points'%map_id, point_id) is None:
