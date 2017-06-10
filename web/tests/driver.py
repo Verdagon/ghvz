@@ -229,6 +229,9 @@ class WholeDriver:
   def WaitForGameLoaded(self):
     self.FindElement([[By.NAME, "gameLoaded"]], wait_long=True)
 
+  def WaitForGameLoaded(self):
+    self.FindElement([[By.NAME, "gameLoaded"]], wait_long=True)
+
   def Quit(self):
     self.inner_driver.Quit()
 
