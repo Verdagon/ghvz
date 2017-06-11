@@ -67,7 +67,6 @@ These are one time firebase setup instructions along with backend configuration
 
 #### Back End (/backend)
 1. Open your Firebase account page and use the gear icon to select the settings
-1. Copy your project ID to app.yaml in your /backend folder
 1. Make a copy of config\_.py and name it config.py (remove the underscore)
 1. Back in Firebase copy your webconfig and place a copy into your newly created config.py
 1. Click on the Service Accounts tab and navigate to the Database Secrets sub tab.
