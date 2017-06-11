@@ -387,7 +387,7 @@ type User {
 
   read() {
     isServer() ||
-    auth.uid == key()
+    key() == getUserId()
   }
 
   write() {     isServer()   }
@@ -426,4 +426,5 @@ type PublicLife extends LifeBase {
 /playersPublic/PlayerId/lives/{LifeId} is PublicLife;
 /rewardCategories/{RewardCategoryId} is RewardCategory;
 /rewards/{RewardId} is RewardCategory;
+/users/{UserId} is User;
 /users/UserId/players/{PlayerId} is PrivatePlayer;
