@@ -1,11 +1,9 @@
-import time
-from driver import RetryingDriver
-
+import setup
 from selenium.webdriver.common.by import By
 
-try:
-  driver = RetryingDriver("reggie")
+driver = setup.MakeDriver(user="reggie")
 
+try:
   driver.FindElement([[By.NAME, 'joinGame']])
 
   driver.Click([[By.NAME, 'joinGame']])
@@ -17,6 +15,8 @@ try:
   driver.Click([[By.NAME, 'joinGameNamePage'], [By.TAG_NAME, 'paper-button']])
 
   driver.Click([[By.NAME, 'joinGameBlasterPage'], [By.NAME, 'option1']])
+
+  driver.Click([[By.NAME, 'joingGameTakePhotos'], [By.NAME, 'option1']])
 
   driver.Click([[By.NAME, 'joinGameBeVolunteerPage'], [By.NAME, 'option1']])
 
@@ -52,7 +52,7 @@ try:
 
   # driver.SwitchUser("drake")
 
-  # driver.Click([[By.NAME, 'drawerProfile']])
+  # driver.Click([[By.NAME, 'drawerMy Profile']])
 
   # driver.ExpectContains([[By.NAME, 'profilePoints']], '100')
 
@@ -68,7 +68,7 @@ try:
   #     [[By.ID, 'victimName']],
   #     'Jack Slayer the Bean Slasher')
 
-  # driver.Click([[By.NAME, 'drawerProfile']])
+  # driver.Click([[By.NAME, 'drawerMy Profile']])
 
   # driver.ExpectContains([[By.NAME, 'profilePoints']], '200')
 
@@ -78,7 +78,7 @@ try:
 
   # driver.FindElement([[By.NAME, 'ChatRoom: Horde ZedLink']])
   
-  # driver.Click([[By.NAME, 'drawerProfile']])
+  # driver.Click([[By.NAME, 'drawerMy Profile']])
 
   driver.Quit()
 

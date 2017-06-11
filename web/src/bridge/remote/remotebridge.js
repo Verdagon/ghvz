@@ -1,6 +1,7 @@
 
 class RemoteBridge {
-  constructor(serverUrl, firebaseConfig) {
+  constructor(serverUrl, firebaseConfig, signInMethod) {
+    this.signInMethod = signInMethod;
 
     firebase.initializeApp(firebaseConfig);
     this.firebaseListener =
@@ -13,75 +14,67 @@ class RemoteBridge {
     for (let methodName of Bridge.METHODS) {
       if (!this[methodName]) {
         this[methodName] = function(args) {
-          return this.requester.sendPostRequest(methodName, {}, args);
+          return this.requester.sendRequest(methodName, args);
         };
       }
     }
-  }
 
-  signIn({}) {
-    if (this.userId == null) {
-      return new Promise((resolve, reject) => {
-        firebase.auth().getRedirectResult()
-            .then((result) => {
-              if (result.user) {
-                this.userId = "user-" + result.user.uid;
+    this.signedInPromise =
+        new Promise((resolve, reject) => {
+          firebase.auth().onAuthStateChanged((firebaseUser) => {
+            if (firebaseUser) {
+              firebase.auth().currentUser.getToken(false).then((userToken) => {
+                if (this.userId == null) {
+                  this.userId = "user-" + firebaseUser.uid;
+                  this.requester.setRequestingUserTokenAndId(userToken, this.userId);
                   this.firebaseListener.listenToUser(this.userId)
                       .then((exists) => {
                         if (exists) {
                           resolve(this.userId);
                         } else {
-                          this.register({userId: this.userId})
-                              .then(() => {
-                                this.firebaseListener.listenToUser(this.userId);
-                              })
-                              .catch((error) => {
-                                reject(error);
-                              });
+                          this.register({userId: this.userId}).then(() => {
+                            this.firebaseListener.listenToUser(this.userId);
+                            resolve(this.userId);
+                          });
                         }
                       });
-                // });
-              } else {
-                // This sometimes happens when we redirect away. Let it go.
-              }
-            })
-            .catch((error) => {
-              reject(error.message);
-            });
-        firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+                } else {
+                  // Sometimes we get spurious auth changes.
+                  // As long as we stick with the same user, its fine.
+                  assert("user-" + firebaseUser.uid == this.userId);
+                }
+              });
+            }
+          });
+        });
+  }
+
+  signIn({}) {
+    if (this.userId == null) {
+      return new Promise((resolve, reject) => {
+        let signInMethod = Utils.getParameterByName('signInMethod', 'google');
+        assert(signInMethod == 'google' || signInMethod == 'email', 'signInMethod must be "google" or "email"!');
+        if (signInMethod == 'email') {
+          let email = Utils.getParameterByName('email', null);
+          let password = Utils.getParameterByName('password', null);
+          if (!email || !password) {
+            alert('Email and password must be set');
+            return;
+          }
+
+          firebase.auth().signInWithEmailAndPassword(email, password);
+        } else {
+          firebase.auth().getRedirectResult();
+          firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+        }
       });
     } else {
       throwError("Impossible");
     }
   }
 
-  attemptAutoSignIn() {
-    return new Promise((resolve, reject) => {
-      firebase.auth().onAuthStateChanged((firebaseUser) => {
-        if (firebaseUser) {
-          if (this.userId == null) {
-            this.userId = "user-" + firebaseUser.uid;
-            this.firebaseListener.listenToUser(this.userId)
-                .then((exists) => {
-                  if (exists) {
-                    resolve(this.userId);
-                  } else {
-                    this.register({userId: this.userId}).then(() => {
-                      this.firebaseListener.listenToUser(this.userId);
-                      resolve(this.userId);
-                    });
-                  }
-                });
-          } else {
-            // Sometimes we get spurious auth changes.
-            // As long as we stick with the same user, its fine.
-            assert("user-" + firebaseUser.uid == this.userId);
-          }
-        } else {
-          reject();
-        }
-      });
-    });
+  getSignedInPromise() {
+    return this.signedInPromise;
   }
 
   signOut() {
@@ -102,13 +95,13 @@ class RemoteBridge {
     this.firebaseListener.listenToGameAsAdmin(gameId);
   }
 
-  listenToGameAsNonAdmin(gameId, playerId) {
-    this.firebaseListener.listenToGameAsNonAdmin(gameId, playerId);
+  listenToGameAsPlayer(gameId, playerId) {
+    this.firebaseListener.listenToGameAsPlayer(gameId, playerId);
   }
 
   register(args) {
     let {userId} = args;
-    return this.requester.sendPostRequest('register', {}, {
+    return this.requester.sendRequest('register', {
       userId: userId,
       requestingUserId: null, // Overrides what the requester wants to do
     }).then(() => {

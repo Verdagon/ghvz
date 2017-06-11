@@ -35,6 +35,7 @@
       done_() {
         // As the new player comes down from firebase,
         // <ghvz-app> will detect it and auto-choose it.
+        this.newPlayerArgs.profileImageUrl = PlayerUtils.getDefaultProfilePic(this.newPlayerArgs.name || "");
         this.bridge.createPlayer(
             Utils.merge(
                 {
@@ -77,6 +78,11 @@
         this.pageNumber++;
       },
 
+      handlePhotosPageDone_(e) {
+        this.newPlayerArgs.beInPhotos = e.detail.value;
+        this.pageNumber++;
+      },
+
       handleVolunteerPageDone_(e) {
         if (e.detail.value) {
           this.pageNumber++;
@@ -113,6 +119,19 @@
         return [
           {value: true, buttonLabel: "Yes!", text: "I can bring/buy/steal/3D print my own nerf gun!"},
           {value: false, buttonLabel: "No...", text: "I need a nerf gun and can't get one before the game, save one for me please!"},
+        ];
+      },
+
+      makeTakePhotoOptions() {
+        return [
+            {
+                value: true, buttonLabel: "Yes!",
+                text: "I'm good with pictures of me being used for promotional content of the game and/or a public gallery of highlights."
+            },
+            {
+                value: false, buttonLabel: "No",
+                text: "Sorry, nada!"
+            },
         ];
       },
 
@@ -230,6 +249,16 @@
           on-ghvz-interview-page-done="handleGunPageDone_">
         <div class="maintext">Can you get your own Nerf gun before the game? (If not, we can get you one!)</div>
         <div class="subtext">We have way more players than we have nerf guns to lend out, so please try to bring your own! We recommend the <a href='https://www.walmart.com/ip/Nerf-N-Strike-Elite-Disruptor/55187050'>Disruptor</a> tried-and-true and only $12, most players will have them.</div>
+      </ghvz-interview-option-page>
+    </neon-animatable>
+
+    <neon-animatable>
+      <ghvz-interview-option-page
+          name="joingGameTakePhotos"
+          options="[[makeTakePhotoOptions()]]"
+          on-ghvz-interview-page-done="handlePhotosPageDone_">
+        <div class="maintext">Are you ok with photos including your face being taken during the game?</div>
+        <div class="subtext">Photos taken may be included in promotional content of the game and/or a public gallery of highlights.</div>
       </ghvz-interview-option-page>
     </neon-animatable>
 

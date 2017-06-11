@@ -15,25 +15,14 @@ class FakeServer {
 
     this.reader = new PathFindingReader(new SimpleReader(this.database));
 
-    this.timeOffset = 0;
-
     this.writer.set(this.reader.getGamePath(null), []);
     this.writer.set(this.reader.getUserPath(null), []);
 
     window.fakeServer = this;
   }
-  setTimeOffset(args) {
-    let {offsetMs} = args;
-    this.timeOffset = offsetMs;
-  }
-  getTime_() {
-    return new Date().getTime() + this.timeOffset;
-  }
-  signIn(args) {
-    let {userId} = args;
-    assert(userId);
-    this.reader.getUserPath(userId);
-    return userId;
+  getTime_(args) {
+    let {serverTime} = args;
+    return serverTime || new Date().getTime();
   }
   register(args) {
     let {userId, name} = args;
@@ -72,6 +61,14 @@ class FakeServer {
         this.reader.getAdminPath(gameId, null),
         null,
         new Model.Admin(userId, {userId: userId}));
+  }
+  addDefaultProfileImage(args) {
+    let {gameId, defaultProfileImageId} = args;
+    this.writer.insert(
+        this.reader.getDefaultProfileImagePath(gameId, null),
+        null,
+        new Model.DefaultProfileImage(defaultProfileImageId, args)
+    );
   }
   createPlayer(args) {
     let {gameId, playerId, userId} = args;
@@ -151,13 +148,13 @@ class FakeServer {
   }
 
   addPlayerToGroup(args) {
-    let {groupId, otherPlayerId} = args;
+    let {groupId, playerToAddId} = args;
     let gameId = this.reader.getGameIdForGroupId(groupId);
     let game = this.database.gamesById[gameId];
-    let player = game.playersById[otherPlayerId];
+    let player = game.playersById[playerToAddId];
     let group = game.groupsById[groupId];
 
-    let existingMembership = group.membershipsByPlayerId[otherPlayerId];
+    let existingMembership = group.membershipsByPlayerId[playerToAddId];
     if (existingMembership)
       return;
 
@@ -167,22 +164,22 @@ class FakeServer {
     this.writer.insert(
         this.reader.getMembershipPath(gameId, groupId, null),
         null,
-        new Model.GroupMembership(otherPlayerId, {playerId: otherPlayerId}));
+        new Model.GroupMembership(playerToAddId, {playerId: playerToAddId}));
     this.writer.insert(
-        this.reader.getPlayerGroupMembershipPath(gameId, otherPlayerId, null),
+        this.reader.getPlayerGroupMembershipPath(gameId, playerToAddId, null),
         null,
         new Model.PlayerGroupMembership(groupId, {groupId: groupId}));
 
     for (let chatRoom of game.chatRooms) {
       if (chatRoom.groupId == groupId) {
-        this.addPlayerToChatRoom_(gameId, groupId, chatRoom.id, otherPlayerId);
+        this.addPlayerToChatRoom_(gameId, groupId, chatRoom.id, playerToAddId);
       }
     }
   }
 
   removePlayerFromGroup(args) {
-    let {groupId, otherPlayerId} = args;
-    let playerId = otherPlayerId;
+    let {groupId, playerToAddId} = args;
+    let playerId = playerToAddId;
     let gameId = this.reader.getGameIdForGroupId(groupId);
     let game = this.database.gamesById[gameId];
     let player = game.playersById[playerId];
@@ -241,7 +238,7 @@ class FakeServer {
           this.reader.getChatRoomPath(gameId, chatRoomId).concat(["messages"]),
           null,
           new Model.Message(messageId, Utils.merge(args, {
-            time: this.getTime_(),
+            time: this.getTime_(args),
             playerId: playerId,
           })));
     } else {
@@ -256,10 +253,19 @@ class FakeServer {
         this.reader.getRequestCategoryPath(gameId, chatRoomId, null),
         null,
         new Model.RequestCategory(requestCategoryId, Utils.merge(args, {
-          time: this.getTime_(),
+          time: this.getTime_(args),
         })));
   }
 
+  updateRequestCategory(args) {
+    let {gameId, requestCategoryId} = args;
+    let chatRoomId = this.reader.getChatRoomIdForRequestCategoryId(requestCategoryId);
+    let requestCategoryPath = this.reader.getRequestCategoryPath(gameId, chatRoomId, requestCategoryId);
+    for (let argName in args) {
+      this.writer.set(requestCategoryPath.concat([argName]), args[argName]);
+    }
+  }
+  
   addRequest(args) {
     let {requestId, requestCategoryId, playerId} = args;
     let chatRoomId = this.reader.getChatRoomIdForRequestCategoryId(requestCategoryId);
@@ -289,7 +295,7 @@ class FakeServer {
     else
       throwError('Bad request type');
     this.writer.set(requestPath.concat(["response"]), {
-      time: this.getTime_(),
+      time: this.getTime_(args),
       text: text
     });
   }
@@ -323,7 +329,8 @@ class FakeServer {
         new Model.RewardCategory(rewardCategoryId, args));
   }
   updateRewardCategory(args) {
-    let rewardCategoryPath = this.reader.pathForId(rewardCategoryId);
+    let {gameId, rewardCategoryId} = args;
+    let rewardCategoryPath = this.reader.getRewardCategoryPath(gameId, rewardCategoryId);
     for (let argName in args) {
       this.writer.set(rewardCategoryPath.concat([argName]), args[argName]);
     }
@@ -363,7 +370,7 @@ class FakeServer {
     let [gameId, playerId] = this.reader.getGameIdAndPlayerIdForNotificationId(notificationId);
     this.writer.set(
         this.reader.getNotificationPath(gameId, playerId, notificationId).concat(["seenTime"]),
-        this.getTime_());
+        this.getTime_(args));
   }
   addReward(args) {
     let {rewardCategoryId, rewardId, code} = args;
@@ -429,6 +436,9 @@ class FakeServer {
           this.writer.set(
               this.reader.getRewardPath(gameId, rewardCategory.id, reward.id).concat(["playerId"]),
               playerId);
+          this.writer.set(
+              this.reader.getPlayerPath(gameId, player.id).concat(["points"]),
+              player.points + rewardCategory.points);
           this.writer.insert(
               this.reader.getClaimPath(gameId, playerId, null),
               null,
@@ -471,7 +481,7 @@ class FakeServer {
   //   for (let group of this.database.gamesById[gameId].groups) {
   //     if (group.autoRemove) {
   //       if (group.allegianceFilter && group.allegianceFilter != player.allegiance) {
-  //         this.removePlayerFromGroup({groupId: group.id, otherPlayerId: playerId});
+  //         this.removePlayerFromGroup({groupId: group.id, playerToAddId: playerId});
   //       }
   //     }
   //   }
@@ -484,7 +494,7 @@ class FakeServer {
   //     if (group.autoAdd) {
   //       console.log('considering', group.name, group.autoAdd, group.allegianceFilter, player.name, player.allegianceFilter);
   //       if (group.allegianceFilter == 'none' || group.allegianceFilter == player.allegiance) {
-  //         this.addPlayerToGroup({groupId: group.id, otherPlayerId: playerId});
+  //         this.addPlayerToGroup({groupId: group.id, playerToAddId: playerId});
   //       }
   //     }
   //   }
@@ -498,7 +508,7 @@ class FakeServer {
       if (group.autoRemove) {
         if (group.allegianceFilter != 'none' && group.allegianceFilter != player.allegiance) {
           if (group.memberships.find(m => m.playerId == playerId)) {
-            this.removePlayerFromGroup({groupId: group.id, otherPlayerId: playerId});
+            this.removePlayerFromGroup({groupId: group.id, playerToAddId: playerId});
           }
         }
       }
@@ -506,7 +516,7 @@ class FakeServer {
     for (let group of this.database.gamesById[gameId].groups) {
       if (group.autoAdd) {
         if (group.allegianceFilter == 'none' || group.allegianceFilter == player.allegiance) {
-          this.addPlayerToGroup({gameId: gameId, groupId: group.id, otherPlayerId: playerId});
+          this.addPlayerToGroup({gameId: gameId, groupId: group.id, playerToAddId: playerId});
         }
       }
     }
@@ -560,7 +570,7 @@ class FakeServer {
         null,
         new Model.Infection(this.idGenerator.newInfectionId(), {
           infectorId: infectorPlayerId,
-          time: this.getTime_(),
+          time: this.getTime_(args),
         }));
     victimPlayer = this.reader.get(victimPlayerPath);
     if (victimPlayer.infections.length >= victimPlayer.lives.length) {
@@ -578,7 +588,7 @@ class FakeServer {
         null,
         new Model.Life(lifeId, {
           code: code,
-          time: this.getTime_(),
+          time: this.getTime_(args),
         }));
     let player = this.reader.get(playerPath);
     if (player.lives.length > player.infections.length) {
