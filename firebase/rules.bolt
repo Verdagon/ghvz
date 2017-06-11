@@ -81,7 +81,7 @@ getCurrentUser() {
 
 isGroupMember(groupId) {  
   // PROBLEM: TODO: can't iterate in firebase
-  root.groups[groupId].players[getCurrentUser().players[0]] 
+  root.groups[groupId].players[getCurrentUser().players.first] 
 }
 
 isAdmin(gameId) {
@@ -105,9 +105,7 @@ type ChatRoom {
   messages: Map<MessageId, Message>;
 
   read() {
-    auth != null && (isServer() ||
-    isAdmin(this.gameId) ||
-    isGroupMember(this.groupId))
+    true;
   }
 
   // write() handled by server
@@ -127,13 +125,13 @@ type Message {
   location: Location;
 
   read() {
-    auth != null && (isServer() ||
-    isAdmin(ref.parent().gameId) ||
-    isGroupMember(ref.parent().groupId))
+    true;
   }
 
+  // write() handled by server
+
   validate() {
-    root.chatRooms[ref.parent().ChatRoomId]
+    root.chatRooms[this.parent().ChatRoomId]
   }
 }
 
@@ -155,6 +153,12 @@ type Game {
   players: Map<PlayerId, Boolean>;
   rewardCategories: Map<RewardCategoryId, Boolean>;
 
+  read() {
+    true;
+  }
+
+  // write() handled by server
+  
   validate() {
     key() == this.GameId
   }
@@ -175,11 +179,11 @@ type Group {
   players: Map<PlayerId, Boolean>;
 
   read() {
-    isServer() ||
-    isAdmin(this.gameId) ||
-    this.players[getCurrentUser()] != null
+    true;
   }
   
+  // write() handled by server
+
   validate() {
     root.games[this.gameId] != null
   }
@@ -191,6 +195,12 @@ type Gun {
   playerId: OptionalPlayerId;
   gameId: OptionalGameId;
   label: String;
+
+  read() {
+    true;
+  }  
+
+  // write() handled by server
 
   validate() {
     root.games[this.gameId].players[this.playerId] != null
@@ -208,8 +218,11 @@ type Mission {
   rsvpersGroupId: GroupId;
 
   read() {
-    isGroupMember(this.groupId)
+    true;
   }
+
+  // write() handled by server
+
   validate() {
     root.games[this.gameId] != null
   }
@@ -256,6 +269,9 @@ type PrivatePlayer extends PlayerBase {
     isAdmin(this.gameId) ||
     auth.uid == this.userId
   }
+
+  // write() handled by server
+
   validate() {
     key() == this.gameId && // #1
     root.games[this.gameId].players[this.playerId] != null
@@ -269,6 +285,12 @@ type Reward {
   time: Timestamp;
   code: String;
   playerId: OptionalPlayerId;
+
+  read() {
+    true;
+  }
+
+  // write() handled by server
 
   validate() { // #2
     this.playerId == "" ||
@@ -292,6 +314,9 @@ type PublicPlayer extends PlayerBase {
     isAdmin(this.gameId) ||
     auth.uid == this.userId
   }
+
+  // write() handled by server
+
   validate() {
     root.privatePlayers[this.playerId] != null
   }
@@ -308,6 +333,17 @@ type RewardCategory {
   points: Number;
   rewards: Map<RewardId, Boolean>;
   shortName: String;
+
+  read() {
+    true;
+  }
+
+  // write() handled by server
+
+  validate() {
+    true;
+  }
+  
 }
 
 type Player {
@@ -331,6 +367,12 @@ type User {
     isServer() ||
     auth.uid == key()
   }
+
+  // write() handled by server
+
+  validate() {
+    true;
+  }
 }
 
 type PrivateLife extends LifeBase {
@@ -348,18 +390,18 @@ type PublicLife extends LifeBase {
   write() { isServer() }
 }
 
-/chatRooms/{ChatRoomId} is Map<ChatRoomId, ChatRoom>;
-/chatRooms/{ChatRoomId}/messages/{MessageId} is Map<MessageId, Message>;
-/games/{GameId} is Map<GameId, Game>;
-/games/{GameId}/adminUsers/{UserId} is Map<UserId, User>;
-/groups/{GroupId} is Map<GroupId, Group>;
-/groups/{GroupId}/players/{PlayerId} is Map<PlayerId, PrivatePlayer>;
-/guns/{GunId} is Map<GunId, Gun>;
-/missions/{MissionId} is Map<MissionId, Mission>;
-/playersPrivate/{PlayerId} is Map<PlayerId, PrivatePlayer>;
-/playersPrivate/{PlayerId}/lives/{LifeId} is Map<LifeId, PrivateLife>;
-/playersPublic/{PlayerId}  is Map<PlayerId, PublicPlayer>;
-/playersPublic/{PlayerId}/lives/{LifeId} is Map<LifeId, PublicLife>;
-/rewardCategories/{RewardCategoryId} is Map<RewardCategoryId, RewardCategory>;
-/rewards/{RewardId} is Map<RewardId, RewardCategory>;
-/users/{UserId}/players/{PlayerId} is Map<PlayerId, PrivatePlayer>;
+/chatRooms/{ChatRoomId} is ChatRoom;
+/chatRooms/ChatRoomId/messages/{MessageId} is Message;
+/games/{GameId} is Game;
+/games/GameId/adminUsers/{UserId} is User;
+/groups/{GroupId} is Group;
+/groups/GroupId/players/{PlayerId} is PrivatePlayer;
+/guns/{GunId} is Gun;
+/missions/{MissionId} is Mission;
+/playersPrivate/{PlayerId} is PrivatePlayer;
+/playersPrivate/PlayerId/lives/{LifeId} is PrivateLife;
+/playersPublic/{PlayerId} is PublicPlayer;
+/playersPublic/PlayerId/lives/{LifeId} is PublicLife;
+/rewardCategories/{RewardCategoryId} is RewardCategory;
+/rewards/{RewardId} is RewardCategory;
+/users/UserId/players/{PlayerId} is PrivatePlayer;
