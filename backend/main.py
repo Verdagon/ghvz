@@ -3,7 +3,7 @@ import logging
 import time
 import random
 
-from api_helpers import respondError
+from api_helpers import AppError, respondError
 from firebase import firebase
 from flask import abort, Flask, jsonify, make_response, request, g
 from google.appengine.ext import ndb

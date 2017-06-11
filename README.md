@@ -10,7 +10,7 @@ You may run against the fake JS server (do nothing), run against production, or 
 
 ### Quick Start
 
-Clone this project and follow the setup section if you are missing any dependencies 
+Clone this project and follow the setup section if you are missing any dependencies
 
 ```bash
 cd web
@@ -43,7 +43,7 @@ These are one time firebase setup instructions along with backend configuration
 #### Front End (/web)
 1. [Create a firebase project](https://console.firebase.google.com/?pli=1)
 1. Open authentication using the left hand pane and enable (1) Google and (2) Email/Password
-1. Open the users tab, create 8 users listed below 
+1. Open the users tab, create 8 users listed below
 
    Use the same password (**write it down**, you'll need it if you want to run webdrivers)
 1. Hit the copy button next to zella's name and put that into your config.py and config.json
@@ -161,7 +161,7 @@ To run the webdrivers:
 
 WARNING: This test will nuke our prod firebase. This is fine, everyone knows that that data could disappear at any moment. Though if two people run this test at the same time, it could fail. There's an open task on go/hvz-milestones (#201) to fix these particular inconveniences.
 
-First, get a local backend server running. Then:
+**First, get a local backend server running.** Then:
 ```bash
 cd backend/
 pip install requests
