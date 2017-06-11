@@ -20,12 +20,9 @@ import in_memory_store as store
 import notifications
 import config
 
-<<<<<<< HEAD
-=======
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
->>>>>>> master
 requests_toolbelt.adapters.appengine.monkeypatch()
 HTTP_REQUEST = google.auth.transport.requests.Request()
 
@@ -183,12 +180,6 @@ def StressTestBatch():
   return ''
 
 @app.route('/api/<method>', methods=['POST'])
-<<<<<<< HEAD
-def RouteRequest(method):
-  if method not in methods:
-    return respondError(400, "Requested API method does not exist")
-  f = methods[method]
-=======
 def SingleEndpoint(method):
   return jsonify(HandleSingleRequest(method, json.loads(request.data)))
 
@@ -199,7 +190,6 @@ def BatchEndpoint():
 def HandleSingleRequest(method, body):
   result = HandleBatchRequest([{'method': method, 'body': body}])
   return result[0]
->>>>>>> master
 
 def HandleBatchRequest(requests):
   game_state.maybe_load(GetFirebase())
