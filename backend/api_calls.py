@@ -1,4 +1,4 @@
-from flask import abort
+from api_helpers import AppError, respondError
 
 import logging
 import random
@@ -1484,12 +1484,15 @@ def CreateMap(request, game_state):
   """Creates a new Map with the given mapId associated with the given groupId.
 
     Validation:
+      gameId must exist
       groupId must exist
-      mapId must exist
-      name must exist
+      mapId must not exist
+      name must be present
 
     Args:
-      groupId: Id uniquely identifying the group the map will be associated with.
+      gameID: Id uniquely identifying the game the map will be associated with.
+      groupId: Id uniquely identifying the group the map will be associated
+        with.
       mapId: Id uniquely identifying the map to be created.
       name: Name of the map to create
 
@@ -1497,29 +1500,31 @@ def CreateMap(request, game_state):
       /maps/%(mapId)
   """
   helpers.ValidateInputs(request, game_state, {
-    'mapId': 'MapId',
-    'groupId': 'GroupId',
+    'gameId': 'GameId',
+    'accessGroupId': 'GroupId',
+    'mapId': '!MapId',
     'name': 'String',
   })
 
-  map_id = request['mapId']
-
-  if game_state.get('/maps', map_id) is None:
-    put_data = {
-      'groupId': request['groupId'],
+  return game_state.put(
+    '/maps',
+    request['mapId'],
+    {
+      'gameId': request['gameId'],
+      'accessGroupId': request['accessGroupId'],
       'name': request['name']
-    }
-    return game_state.put('/maps', map_id, put_data)
+  })
 
 # For lack of any organization in this project and my devious inclusion to
 # entropy I placed this here, right before I used it.
-hex_range = range(0,10) + ['a','A','b','B','c','d','e','f']
+hex_range = range(0,10) + ['a','b','c','d','e','f']
 
-# All of them should be chars.
-hex_range = map(lambda x: str(x), list(hex_range))
+# All of them should be unicode chars.
+hex_range = map(lambda x: unicode(str(x), "utf-8"), list(hex_range))
 
-def addPoint(request, game_state):
-  """Adds the point (location) of a player to a map with a set color and name.
+
+def AddMarker(request, game_state):
+  """Adds the marker (location) of a player to a map with a set color and name.
 
     Validation:
       color must exist
@@ -1528,19 +1533,19 @@ def addPoint(request, game_state):
       mapId must exist
       name must exist
       playerId must exist
-      pointId must exist
+      markerId must not exist
 
     Args:
-      color: The color will be used to draw the point in the UI.
+      color: The color will be used to draw the marker in the UI.
       latitude: Latitude of the player's location.
       longitude: Longitude of the player's location.
-      mapId: The unique id of the map the point will be added to.
-      name: The name associated with the point.
-      playerId: The unique of the id that the point will be associated with.
-      pointId: The unique id of the point to be added.
+      mapId: The unique id of the map the marker will be added to.
+      name: The name associated with the marker.
+      playerId: The unique of the id that the marker will be associated with.
+      markerId: The unique id of the marker to be added.
 
     Firebase entries:
-      /maps/%(mapId)/points/%(pointId)
+      /maps/%(mapId)/points/%(markerId)
   """
   helpers.ValidateInputs(request, game_state, {
     'color': 'String',
@@ -1549,7 +1554,7 @@ def addPoint(request, game_state):
     'mapId': 'MapId',
     'name': 'String',
     'playerId': 'PlayerId',
-    'pointId': 'PointId',
+    'markerId': 'String',
   })
 
   map_id = request['mapId']
@@ -1561,34 +1566,88 @@ def addPoint(request, game_state):
   # by being an admin of the game the map belongs to or the owner of the group
   # the map belongs to.
   target_map = game_state.get('/maps', map_id)
-  if target_map is None:
-    return abort(400)
 
-  map_group = game_state.get('/groups', target_map['groupId'])
+  map_group = game_state.get('/groups', target_map['accessGroupId'])
+  if map_group is None:
+    raise AppError("Data corruption")
+
   map_game = game_state.get('/games', map_group['gameId'])
+  if map_game is None:
+    raise AppError("Data corruption")
 
-  if map_group['ownerPlayerId'] != requestingPlayerId and \
-     map_game['adminUsers'][requesting_user_id] is None:
-    return abort(400, 'User does not have access')
+  if map_group['ownerPlayerId'] != requesting_player_id and \
+    requesting_user_id not in map_game['adminUsers']:
+    return respondError(401, "User does not have access")
 
   # Basic Color verification. Should be a 6 character string composed of only
   # hex digits.
-  point_color = request['pointId']
-  if len(point_color) != 6 or \
-     all(map(lambda x: x in hex_range, list(point_color))):
-    return abort(400, 'Color was formatted incorrectly... dawg.')
+  marker_color_list = list(request['color'].lower())
+  if len(marker_color_list) != 6 or \
+    not all(map(lambda x: x in hex_range, marker_color_list)):
+    return respondError(400, 'Color was formatted incorrectly; should be six ' +
+        'hexadecimal digits'
+      )
 
-  point_id = request['pointId']
-  if game_state.get('/maps/%s/points'%map_id, point_id) is None:
-    put_data = {
-      'color': request['color']
-      'latitude': request['latitude'],
-      'longitude': request['longitude'],
-      'mapId': map_id,
-      'name': request['name']
-      'playerId': request['playerId'],
-    }
+  marker_data = {
+    'color': request['color'],
+    'latitude': request['latitude'],
+    'longitude': request['longitude'],
+    'name': request['name'],
+    'playerId': request['playerId'],
+  }
 
-    return game_state.put('/maps/%s/points'%map_id, map_id, put_data)
+  return [
+    game_state.put(
+      '/maps/%s/markers' % map_id,
+      request['markerId'],
+      marker_data),
+    game_state.put(
+      '/playersPrivate/%s/associatedMaps/%s' % (request['playerId'], map_id),
+      request['markerId'],
+      "true")
+  ]
+
+def UpdatePlayerMarkers(request, game_state):
+  """Updates all markers belonging to this player to the given [latitude] and
+  [longitude].
+
+    Validation:
+      latitude must be present
+      longitude must be present
+      playerId must exist
+
+    Args:
+      latitude: Latitude of the player's location.
+      longitude: Longitude of the player's location.
+      playerId: The unique id of the player whose location should be updated
+  """
+  helpers.ValidateInputs(request, game_state, {
+    'latitude': 'String',
+    'longitude': 'String',
+    'playerId': 'PlayerId',
+  })
+
+  player = game_state.get('/playersPrivate', request['playerId'])
+  if 'associatedMaps' not in player:
+    return []
+  associated_maps = player['associatedMaps']
+
+  location_data = {
+    'latitude': request['latitude'],
+    'longitude': request['longitude']
+  }
+
+  results = []
+  print associated_maps
+
+  for map_to_update in associated_maps:
+    for marker in associated_maps[map_to_update]:
+      print "" + map_to_update + ": " + marker
+      patch_result = game_state.patch(
+        '/maps/%s/markers/%s' % (map_to_update, marker),
+        location_data)
+      results.append(patch_result)
+
+  return results
 
 # vim:ts=2:sw=2:expandtab

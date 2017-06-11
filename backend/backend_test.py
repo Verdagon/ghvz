@@ -36,7 +36,7 @@ class EndToEndTest(unittest.TestCase):
     r = self.requester.Post(method, data)
     data = " ".join(['%s="%s"' % (k, v) for k, v in data.iteritems()])
     self.assertTrue(r.ok, msg='Expected to POST 200 [ %s ] but got %d:\n%s\nfor: %s' % (method, r.status_code, r.text, data))
-  
+
   def AssertFails(self, method, data):
     r = self.requester.Post(method, data)
     data = " ".join(['%s="%s"' % (k, v) for k, v in data.iteritems()])
@@ -86,7 +86,7 @@ class EndToEndTest(unittest.TestCase):
   def setUp(self):
     self.requester = Requester()
     self.requester.Post('DeleteTestData', {'id': secrets.FIREBASE_EMAIL})
-  
+
   def tearDown(self):
     pass
     # self.requester.Post('DeleteTestData', {'id': secrets.FIREBASE_EMAIL})
@@ -326,7 +326,7 @@ class EndToEndTest(unittest.TestCase):
     }
     self.AssertOk('addReward', create)
     self.AssertFails('addReward', create)
-    
+
     claim = {
       'gameId': self.Id('gameId'),
       'playerId': self.Id('playerId'),

@@ -1,8 +1,9 @@
 # [START app]
 import logging
 
+from api_helpers import respondError
 from firebase import firebase
-from flask import Flask, jsonify, request, g
+from flask import abort, Flask, jsonify, make_response, request, g
 from google.appengine.ext import ndb
 import flask_cors
 import google.auth.transport.requests
@@ -15,7 +16,6 @@ import constants
 import in_memory_store as store
 import notifications
 import secrets
-
 
 requests_toolbelt.adapters.appengine.monkeypatch()
 HTTP_REQUEST = google.auth.transport.requests.Request()
@@ -35,24 +35,6 @@ def GetFirebase():
         'https://trogdors-29fa4.firebaseio.com', authentication=auth)
     g._database = db
   return db
-
-
-class AppError(Exception):
-  """Generic error class for app errors."""
-  status_code = 500
-  def __init__(self, message, status_code=None, payload=None):
-    Exception.__init__(self)
-    self.message = message
-    if status_code is None:
-      self.status_code = status_code
-    if payload is None:
-      self.payload = payload
-
-  def to_dict(self):
-    rv = dict(self.payload or ())
-    rv['message'] = self.message
-    return rv
-
 
 @app.errorhandler(api_calls.InvalidInputError)
 def HandleError(e):
@@ -105,6 +87,8 @@ methods = {
   'DeleteTestData': api_calls.DeleteTestData,
   'DumpTestData': api_calls.DumpTestData,
   'createMap': api_calls.CreateMap,
+  'addMarker': api_calls.AddMarker,
+  'updatePlayerMarkers': api_calls.UpdatePlayerMarkers,
 }
 
 
@@ -143,7 +127,7 @@ def CronNotification():
 @app.route('/api/<method>', methods=['POST'])
 def RouteRequest(method):
   if method not in methods:
-    raise AppError('Invalid method %s' % method)
+    return respondError(400, "Requested API method does not exist")
   f = methods[method]
 
   game_state.maybe_load(GetFirebase())
