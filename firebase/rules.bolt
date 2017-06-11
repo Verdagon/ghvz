@@ -75,21 +75,39 @@ type Location {
  Helper Functions Needed By Complex Types
 ******************************************************************************/
 
-getCurrentUser() {
-  root.users[auth.uid]
+getUserId() {
+  ('user-' + auth.uid)
 }
 
-isGroupMember(groupId) {  
-  // PROBLEM: TODO: can't iterate in firebase
-  root.groups[groupId].players[getCurrentUser().players.first] 
+getCurrentUser() {
+  root.users[getUserId()]
+}
+
+getCurrentPlayerId(gameId) {
+  getCurrentUser().games[gameId].playerId
+}
+
+isGroupMember(groupId, gameId) {  
+  root.groups[groupId].players[getCurrentPlayerId(gameId)]
 }
 
 isAdmin(gameId) {
-  root.games[gameId].admins[auth.uid] != null
+  root.games[gameId].adminsUsers[getUserId()]
+}
+
+isAuthenticated() {
+  auth != null && auth.uid != null
 }
 
 isServer() {
   auth.uid == 'ZiD9uLhDnrLq2n416MjWjn0JOrci6H0oGm7bKyVN' // TODO: place in safe
+}
+
+isAuthenticatedMember(groupId, gameId) {
+  isAuthenticated() && (
+  isServer() ||
+  isAdmin(gameId) || 
+  isGroupMember(groupId, gameId))
 }
 
 /******************************************************************************
@@ -105,13 +123,14 @@ type ChatRoom {
   messages: Map<MessageId, Message>;
 
   read() {
-    true;
+    isAuthenticatedMember(this.groupId, this.gameId)
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
-    root.games[this.gameId] != null
+    root.games[this.gameId] &&
+    root.groups[this.groupId]
   }
 }
 
@@ -125,10 +144,10 @@ type Message {
   location: Location;
 
   read() {
-    true;
+    isAuthenticatedMember(this.parent().groupId, this.parent().gameId)
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
     root.chatRooms[this.parent().ChatRoomId]
@@ -153,11 +172,12 @@ type Game {
   players: Map<PlayerId, Boolean>;
   rewardCategories: Map<RewardCategoryId, Boolean>;
 
+  // Everyone can read a game so they can add themselves
   read() {
-    true;
+    isAuthenticated() 
   }
 
-  // write() handled by server
+  write() {     isServer()   }
   
   validate() {
     key() == this.GameId
@@ -179,10 +199,10 @@ type Group {
   players: Map<PlayerId, Boolean>;
 
   read() {
-    true;
+    isAuthenticatedMember(this.GroupId, this.gameId)
   }
   
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
     root.games[this.gameId] != null
@@ -197,13 +217,13 @@ type Gun {
   label: String;
 
   read() {
-    true;
+    isAuthenticated()
   }  
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
-    root.games[this.gameId].players[this.playerId] != null
+    this.label.length > 0
   }
 }
 
@@ -218,10 +238,10 @@ type Mission {
   rsvpersGroupId: GroupId;
 
   read() {
-    true;
+    isAuthenticatedMember(this.groupId, this.gameId)
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
     root.games[this.gameId] != null
@@ -265,16 +285,14 @@ type PrivatePlayer extends PlayerBase {
   lives: Map<LifeId, PrivateLife>
 
   read() {
-    isServer() ||
-    isAdmin(this.gameId) ||
-    auth.uid == this.userId
+    isAuthenticated() && (isServer() ||
+    getUserId() == this.userId)
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
-    key() == this.gameId && // #1
-    root.games[this.gameId].players[this.playerId] != null
+    root.users[this.userId] != null
   }
 }
 
@@ -287,10 +305,10 @@ type Reward {
   playerId: OptionalPlayerId;
 
   read() {
-    true;
+    isAuthenticated()
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() { // #2
     this.playerId == "" ||
@@ -310,15 +328,14 @@ type PublicPlayer extends PlayerBase {
   lives: Map<LifeId, PublicLife>
 
   read() {
-    isServer() ||
-    isAdmin(this.gameId) ||
-    auth.uid == this.userId
+    isAuthenticated() && (isServer() ||
+    getUserId() == this.userId)
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
-    root.privatePlayers[this.playerId] != null
+    root.users[this.userId] != null
   }
 }
 
@@ -335,13 +352,13 @@ type RewardCategory {
   shortName: String;
 
   read() {
-    true;
+    isAuthenticated()
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
-    true;
+    root.games[this.gameId] != null
   }
   
 }
@@ -358,17 +375,22 @@ type LifeBase {
   LifeId: LifeId; // #1
 }
 
+type GamePlayerLookup {
+  playerId: PlayerId;
+}
+
 type User {
   UserId: UserId; // #1
   a: Boolean;
   players: Map<PlayerId, Player>;
+  games: Map<GameId, GamePlayerLookup>;
 
   read() {
     isServer() ||
     auth.uid == key()
   }
 
-  // write() handled by server
+  write() {     isServer()   }
 
   validate() {
     true;
