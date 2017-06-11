@@ -98,7 +98,7 @@ isGroupMember(groupId, gameId) {
 }
 
 isAdmin(gameId) {
-  root.games[gameId].adminsUsers[getUserId()]
+  root.games[gameId].adminUsers[getUserId()]
 }
 
 isAuthenticated() {
