@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 from api_helpers import AppError, respondError
 
-=======
 import copy
->>>>>>> master
 import logging
 import random
 import time
