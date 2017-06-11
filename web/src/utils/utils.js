@@ -384,13 +384,13 @@ Utils.Validator.prototype.validateInner = function(key, object, expectation) {
       expectation = expectation.slice(1);
     }
 
+    assert(object !== undefined, "'" + key + "' not present!");
+
     if (expectation[0] == '?') {
-      if (object === undefined || object === null)
+      if (object === null)
         return;
       expectation = expectation.slice(1);
     }
-
-    assert(object !== undefined, "'" + key + "' not present!");
 
     if (expectation == 'Number') {
       assert(Utils.isNumber(object));
