@@ -292,7 +292,7 @@ type PrivatePlayer extends PlayerBase {
 
   read() {
     isAuthenticated() && (isServer() ||
-    getUserId() == this.userId)
+    getUserId() == this.userId || isAdmin(this.gameId))
   }
 
   write() {     isServer()   }
