@@ -85,7 +85,7 @@ class EndToEndTest(unittest.TestCase):
 
   def setUp(self):
     self.requester = Requester()
-    # self.requester.Post('DeleteTestData', {'id': config.FIREBASE_EMAIL})
+    self.requester.Post('DeleteTestData', {'id': config.FIREBASE_EMAIL})
 
   def tearDown(self):
     pass
