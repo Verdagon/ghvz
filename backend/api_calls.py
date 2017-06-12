@@ -16,8 +16,18 @@ InvalidInputError = helpers.InvalidInputError
 
 
 ROOT_ENTRIES = (
-    'chatRooms', 'games', 'groups', 'guns', 'missions', 'playersPrivate', 'playersPublic',
-    'users', 'rewardCategories', 'rewards', 'notifications')
+    'chatRooms',
+    'games',
+    'groups',
+    'guns',
+    'maps',
+    'missions',
+    'playersPrivate',
+    'playersPublic',
+    'users',
+    'rewardCategories',
+    'rewards',
+    'notifications')
 
 
 def Register(request, game_state):
@@ -1564,7 +1574,7 @@ def AddMarker(request, game_state):
       )
 
   marker_data = {
-    'color': request['color'],
+    'color': request['color'].lower(),
     'latitude': request['latitude'],
     'longitude': request['longitude'],
     'name': request['name'],
