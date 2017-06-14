@@ -125,13 +125,13 @@
       navigateEmptyPathToGamesPath_() {
         // If there's no path, then go to 'game' automatically 
         if (this.path.length == 0) {
-          this.setPath_(['game']);
+          this.setPath_(['game'], true);
         }
       },
 
       navigateGameToDashboard_() {
         if (this.path.length == 2 && this.path[0] == 'game') {
-          this.setPath_(this.path.slice().concat(['main']));
+          this.setPath_(this.path.slice().concat(['main']), false);
         }
       },
 

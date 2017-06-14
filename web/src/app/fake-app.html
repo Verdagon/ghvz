@@ -74,9 +74,9 @@
         newUrl += queryString;
 
         if (replace)
-          window.history.pushState({}, "", newUrl);
-        else
           window.history.replaceState({}, "", newUrl);
+        else
+          window.history.pushState({}, "", newUrl);
       },
 
       getQueryString_() {

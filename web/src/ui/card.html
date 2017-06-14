@@ -46,10 +46,11 @@
       },
 
       back_() {
-        this.fire('ghvz-set-path', {
+        window.history.back();
+        /*this.fire('ghvz-set-path', {
           inGame: true,
           path: ['main'],
-        });
+        });*/
       },
 
       openDrawer_(e) {
