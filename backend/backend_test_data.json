@@ -149,35 +149,60 @@
       "accessGroupId": "group-%(ident)s-1"
     }
   },
-  "notifications": {
-    "notification-%(ident)s-1testCharles": {
-      "app": true,
+  "queuedNotifications": {
+    "queuedNotification-%(ident)s-1": {
+      "destination" : "http://some.url/moo",
+      "gameId" : "game-%(ident)s-1",
+      "groupId" : "group-%(ident)s-1",
+      "icon" : "icons:close",
+      "message" : "hello!",
+      "mobile" : false,
+      "previewMessage" : "hell",
+      "sent" : true,
+      "site" : true,
+      "sound" : false,
+      "vibrate" : false
+    },
+    "queuedNotification-%(ident)s-1testCharles": {
+      "site": true,
+      "mobile": true,
       "destination": "TODO",
       "icon": "TODO",
       "message": "@testCharles @testBobby test single Message",
       "playerId": "player-%(ident)s-1",
       "previewMessage": "@testCharles @testBobby test single Message",
       "sendTime": 0,
-      "vibrate": true
+      "gameId": "game-%(ident)s-1",
+      "sound": false,
+      "vibrate": true,
+      "sent": true
     },
-    "notification-%(ident)s-4testBobby3": {
-      "app": true,
+    "queuedNotification-%(ident)s-4testBobby3": {
       "destination": "TODO",
       "icon": "TODO",
       "message": "@all test all Message",
       "playerId": "player-%(ident)s-4",
       "previewMessage": "@all test all Message",
       "sendTime": 0,
-      "vibrate": true
+      "gameId": "game-%(ident)s-1",
+      "mobile": true,
+      "sound": false,
+      "vibrate": true,
+      "site": true,
+      "sent": true
     },
-    "notification-%(ident)s-4testCharles": {
-      "app": true,
+    "queuedNotification-%(ident)s-4testCharles": {
       "destination": "TODO",
       "icon": "TODO",
       "message": "@all test all Message",
       "playerId": "player-%(ident)s-1",
       "previewMessage": "@all test all Message",
       "sendTime": 0,
+      "mobile": true,
+      "gameId": "game-%(ident)s-1",
+      "sound": false,
+      "site": true,
+      "sent": true,
       "vibrate": true
     }
   },
@@ -260,6 +285,32 @@
         "photographer": false,
         "server": true,
         "sorcerer": false
+      },
+      "notifications": {
+        "notification-%(ident)s-1-1": {
+          "destination": "http://some.url/moo",
+          "icon": "icons:close",
+          "message": "hello!",
+          "previewMessage": "hell",
+          "queuedNotificationId": "queuedNotification-%(ident)s-1",
+          "time": 0
+        },
+        "notification-%(ident)s-1testCharles-0": {
+          "destination": "TODO",
+          "icon": "TODO",
+          "message": "@testCharles @testBobby test single Message",
+          "previewMessage": "@testCharles @testBobby test single Message",
+          "queuedNotificationId": "queuedNotification-%(ident)s-1testCharles",
+          "time": 0
+        },
+        "notification-%(ident)s-4testCharles-0": {
+          "destination": "TODO",
+          "icon": "TODO",
+          "message": "@all test all Message",
+          "previewMessage": "@all test all Message",
+          "queuedNotificationId": "queuedNotification-%(ident)s-4testCharles",
+          "time": 0
+        }
       }
     },
     "player-%(ident)s-2": {
@@ -327,6 +378,24 @@
         "chronicler": false, "server": false, "client": false,
         "android": false,
         "ios": false
+      },
+      "notifications": {
+        "notification-%(ident)s-4testBobby3-0": {
+          "destination": "TODO",
+          "icon": "TODO",
+          "message": "@all test all Message",
+          "previewMessage": "@all test all Message",
+          "queuedNotificationId": "queuedNotification-%(ident)s-4testBobby3",
+          "time": 0
+        },
+        "notification-%(ident)s-1-0": {
+          "destination": "http://some.url/moo",
+          "icon": "icons:close",
+          "message": "hello!",
+          "previewMessage": "hell",
+          "queuedNotificationId": "queuedNotification-%(ident)s-1",
+          "time": 0
+        }
       }
     },
     "player-%(ident)s-5": {

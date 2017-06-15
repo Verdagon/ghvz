@@ -3,6 +3,7 @@ from api_helpers import AppError, respondError
 import copy
 import logging
 import random
+import textwrap
 import time
 
 import constants
@@ -26,7 +27,7 @@ ROOT_ENTRIES = (
     'users',
     'rewardCategories',
     'rewards',
-    'notifications')
+    'queuedNotifications')
 
 
 def Register(request, game_state):
@@ -587,12 +588,16 @@ def SendChatMessage(request, game_state):
   user_id = game_state.get('/playersPublic/%s' % request['playerId'], 'userId')
   players_in_room = helpers.GetPlayerNamesInChatRoom(game_state, chat)
   notification_data = {
-    'notificationId': 'notification-%s' % request['messageId'][len('message-'):],
+    'gameId': request['gameId'],
+    'queuedNotificationId': 'queuedNotification-%s' % request['messageId'][len('message-'):],
     'message': request['message'],
-    'app': True,
+    'previewMessage': textwrap.wrap(request['message'], 100)[0],
+    'site': True,
+    'mobile': True,
     'vibrate': True,
+    'sound': False,
     'destination': 'TODO',
-    'sendTime': time.time(),
+    'sendTime': int(time.time() * 1000),
     'icon': 'TODO'
   }
   # If we check for all @all, then there is no need to send out additional
@@ -603,7 +608,7 @@ def SendChatMessage(request, game_state):
 
     for player in players_in_room:
       n = notification_data.copy()
-      n['notificationId'] = '%s%s' % (n['notificationId'], player)
+      n['queuedNotificationId'] = '%s%s' % (n['queuedNotificationId'], player)
       n['playerId'] = players_in_room[player]
       helpers.QueueNotification(game_state, n)
   else:
@@ -614,7 +619,7 @@ def SendChatMessage(request, game_state):
       name = token[1:]
       if name in players_in_room:
         n = notification_data.copy()
-        n['notificationId'] = '%s%s' % (n['notificationId'], name)
+        n['queuedNotificationId'] = '%s%s' % (n['queuedNotificationId'], name)
         n['playerId'] = players_in_room[name]
         helpers.QueueNotification(game_state, n)
 
@@ -1472,113 +1477,97 @@ def RandomWords(n):
 def SendNotification(request, game_state):
   """Queue a notification to be sent.
 
-  Validation:
-    notificationId does not exist.
-    groupId or playerId exists.
-
-  Args:
-    notificationId: Queued Notification id to create.
-    message: Message to send to client.
-    previewMessage: Short preview of the message comments. If empty, one will be generated.
-    app: Whether to send as a push notification to the iOS/Android/Web clients.
-    vibrate: Whether the notification should vibrate on iOS/Android.
-    sound: Whether the notification should play a sound on iOS/Android.
-    destination: URL that notification should open when clicked.
-    sendTime: When to spawn notifications from this template. UNIX timestamp.
-    playerId: Player id to send message to. Cannot be mixed with groupId.
-    groupId: Who to send the notifications to. Cannot be mixed with playerId.
-    icon: An icon code to show.
-
   Firebase entries:
     /notifications/%(notificationId)
 """
-  valid_args = ['!notificationId']
-  if 'groupId' in request and 'playerId' not in request:
-    valid_args.append('groupId')
-  elif 'playerId' in request and 'groupId' not in request:
-    valid_args.append('playerId')
-  else:
+  helpers.ValidateInputs(request, game_state, {
+    'gameId': 'GameId', # Game ID
+    'queuedNotificationId': '!QueuedNotificationId', # QueuedNotificationId to create.
+    'message': 'String', # Message to send to client.
+    'previewMessage': 'String', # Short preview of the message comments.
+    'site': 'Boolean', # Whether to send to the web client.
+    'mobile': 'Boolean', # Whether to send to the iOS/Android devices.
+    'vibrate': 'Boolean', # Whether the notification should vibrate on iOS/Android.
+    'sound': 'Boolean', # Whether the notification should play a sound on iOS/Android.
+    'destination': '?String', # URL that notification should open when clicked. Null means it will just open to the notifications page on the site, to this notification.
+    'sendTime': '?Timestamp', # Unix milliseconds timestamp of When to send, or null to send asap.
+    'playerId': '?PlayerId', # Player to send it to. Either this or groupId must be present.
+    'groupId': '?GroupId', # Group to send it to. Either this or playerId must be present.
+    'icon': 'String', # An icon code to show.
+  })
+
+  # groupId or playerId must be present.
+  if (request['groupId'] is None) == (request['playerId'] is None):
     raise InvalidInputError('Must include either a playerId or a groupId')
 
-  required_args = list(valid_args)
-  required_args.extend(['message', 'app', 'vibrate', 'sound', 'destination',
-                        'sendTime', 'groupId', 'icon'])
-  helpers.ValidateInputs(request, game_state, required_args, valid_args)
-  current_time = int(time.time())
-  if 'sendTime' in request and current_time > int(request['sendTime']):
+  current_time = int(time.time() * 1000)
+  if request['sendTime'] is not None and current_time > int(request['sendTime']):
     raise InvalidInputError('sendTime must not be in the past!')
+
   helpers.QueueNotification(game_state, request)
 
 
 def UpdateNotification(request, game_state):
   """Update a queued notification.
 
-  Validation:
-    notificationId exists.
-
-  Args:
-    notificationId: Queued Notification id to create.
-    message: Message to send to client.
-    previewMessage: Short preview of the message conents. Optional.
-    app: Whether to send as a push notification to the iOS/Android/Web clients.
-    vibrate: Whether the notification should vibrate on iOS/Android.
-    sound: Whether the notification should play a sound on iOS/Android.
-    destination: URL that notification should open when clicked.
-    sendTime: When to spawn notifications from this template. UNIX timestamp.
-    playerId: Player id to send message to.
-    groupId: Who to send the notifications to.
-    icon: An icon code to show.
-
   Firebase entries:
     /notifications/%(notificationId)
 """
-  valid_args = ['notificationId']
-  required_args = list(valid_args)
-  helpers.ValidateInputs(request, game_state, required_args, valid_args)
+  helpers.ValidateInputs(request, game_state, {
+    'gameId': 'GameId', # Game ID
+    'queuedNotificationId': 'QueuedNotificationId', # QueuedNotificationId to create.
+    'message': '|String', # Message to send to client.
+    'previewMessage': '|String', # Short preview of the message comments.
+    'site': '|Boolean', # Whether to send to the web client.
+    'mobile': '|Boolean', # Whether to send to the iOS/Android devices.
+    'vibrate': '|Boolean', # Whether the notification should vibrate on iOS/Android.
+    'sound': '|Boolean', # Whether the notification should play a sound on iOS/Android.
+    'destination': '|String', # URL that notification should open when clicked.
+    'sendTime': '|?Timestamp', # Unix milliseconds timestamp of When to send, or null to send asap.
+    'playerId': '|?PlayerId', # Player to send it to. Either this or groupId must be present.
+    'groupId': '|?GroupId', # Group to send it to. Either this or playerId must be present.
+    'icon': '|String', # An icon code to show.
+  })
 
-  put_data = {}
-  properties = ['message', 'app', 'vibrate', 'sound', 'destination', 'sendTime',
-                'groupId', 'playerId', 'icon']
-
-  current_time = int(time.time())
-  if 'sendTime' in request and current_time > int(request['sendTime']):
+  current_time = int(time.time() * 1000)
+  if request['sendTime'] is not None and current_time > int(request['sendTime']):
     raise InvalidInputError('sendTime must not be in the past!')
 
-  notification = game_state.get('/notifications', request['notificationId'])
+  queued_notification = game_state.get('/queuedNotifications', request['queuedNotificationId'])
   # This shouldn't happen since we validated this above...
-  if not notification:
+  if not queued_notification:
     raise InvalidInputError('notificationId must exist!')
-  if current_time > int(notification['sendTime']) or 'sent' in notification:
+  if queued_notification['sent']:
     raise InvalidInputError('Cannot modify sent notification.')
+
+  put_data = {}
+  properties = ['message', 'site', 'mobile', 'vibrate', 'sound', 'destination', 'sendTime',
+                'groupId', 'playerId', 'icon', 'previewMessage']
 
   for property in properties:
     if property in request:
       put_data[property] = request[property]
 
-  game_state.patch('/notifications/%s' % request['notificationId'], put_data)
+  game_state.patch('/queuedNotifications/%s' % request['queuedNotificationId'], put_data)
 
 
 def MarkNotificationSeen(request, game_state):
   """Updates the notification's seenTime.
 
-  Validation:
-    notificationId must exist.
-    playerId must exist.
-
-  Args:
-    notificationId: Notification Id to update.
-    playerId: Player who saw notification.
-
   Firebase entries:
     /playersPrivate/%(playerId)/notifications/%(notificationId)
 """
-  valid_args = ['notificationId', 'playerId']
-  required_args = list(valid_args)
-  helpers.ValidateInputs(request, game_state, required_args, valid_args)
+  helpers.ValidateInputs(request, game_state, {
+    'gameId': 'GameId', # Game ID
+    'notificationId': 'NotificationId', # QueuedNotificationId to create.
+    'playerId': 'PlayerId', # Current player's id
+  })
+
+  current_time = int(time.time() * 1000)
   put_data = {
-    'time': int(time.time())
+    'seenTime': current_time
   }
-  game_state.patch('/player/%s/notifications/%s' % (
+  game_state.patch('/playersPrivate/%s/notifications/%s' % (
       request['playerId'], request['notificationId']), put_data)
 
 

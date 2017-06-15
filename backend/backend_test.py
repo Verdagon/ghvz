@@ -297,6 +297,25 @@ class EndToEndTest(unittest.TestCase):
     }
     self.AssertOk('sendChatMessage', create)
 
+    create = {
+      'gameId': self.Id('gameId'),
+      'queuedNotificationId': self.Id('queuedNotification'),
+      'message': 'hello!',
+      'previewMessage': 'hell',
+      'site': True,
+      'mobile': False,
+      'vibrate': False,
+      'sound': False,
+      'destination': 'http://some.url/moo',
+      'sendTime': None,
+      'playerId': None,
+      'groupId': self.Id('groupId'),
+      'icon': 'icons:close'
+    }
+    self.AssertOk('sendNotification', create)
+
+    self.AssertOk('executeNotifications', {})
+
     # Create missions
     create = {
       'gameId': self.Id('gameId'),
