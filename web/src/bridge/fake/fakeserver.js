@@ -372,7 +372,8 @@ class FakeServer {
   }
   sendNotification(args) {
     this.addQueuedNotification(args);
-    this.executeNotifications(args);
+    if (args.sendTime)
+      setTimeout(() => this.executeNotifications(), args.sendTime);
   }
   executeNotifications(args) {
     for (let game of this.database.games) {
