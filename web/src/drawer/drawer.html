@@ -78,7 +78,11 @@
       signOut_(e) {
         this.fire('ghvz-sign-out');
         e.stopPropagation();
-      }
+      },
+
+      getChatName_(chatRoomId) {
+        return this.game.chatRoomsById[chatRoomId].name;
+      },
     });
   });
 </script>
@@ -246,6 +250,7 @@
             <ghvz-chat-room-name-label
                 class="layout horizontal listing drawer-item"
                 with-icon
+                name$="drawer-[[chatRoom.name]]"
                 game="[[game]]"
                 chat-room-id="[[chatRoom.id]]"
                 data-page="chat"
@@ -258,6 +263,7 @@
             <ghvz-chat-room-name-label
                 class="layout horizontal listing drawer-item"
                 with-icon
+                name$="drawer-[[getChatName_(membership.chatRoomId)]]"
                 game="[[game]]"
                 chat-room-id="[[membership.chatRoomId]]"
                 data-page="chat"
