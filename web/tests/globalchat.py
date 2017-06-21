@@ -40,16 +40,16 @@ driver.SwitchUser(actingPlayer)
 driver.FindElement([[By.NAME, 'drawerChat']])
 driver.Click([[By.NAME, 'drawerChat']])
 driver.FindElement([[By.TAG_NAME, 'ghvz-chat-room-list']])
-driver.FindElement([[By.TAG_NAME, 'ghvz-chat-room']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.TAG_NAME, 'ghvz-chat-room']])
 
 # Check zombie player is in global chat, 2 zombie chats, and no human-only chats
-driver.FindElement([[By.NAME, 'Global Chat']])
-driver.FindElement([[By.NAME, 'Horde ZedLink']])
-driver.FindElement([[By.NAME, 'Zeds Internal Secret Police']])
-driver.DontFindElement([[By.NAME, 'Resistance Comms Hub']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, 'chatRoom-everyone-1']]) # Global chat
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, 'chatRoom-horde-3']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, 'chatRoom-4']])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, 'chatRoom-resistance-2']])
 
 # Open Global Chat
-driver.Click([[By.NAME, 'Global Chat']])
+driver.Click([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, 'chatRoom-everyone-1']])
 
 # Open chat drawer
 openChatDrawer(driver, actingPlayerName, 'Global Chat')
@@ -63,18 +63,18 @@ xpathLeave = getPathToElement(actingPlayerName, 'a', 'chat-drawer-leave')
 driver.DontFindElement([[By.XPATH, xpathLeave]])
 
 ## Check 6 players are in global chat and non-admin can't kick players
-driver.FindElement([[By.NAME, playerNames['zella']]])
-driver.DontFindElement([[By.NAME, playerNames['zella']], [By.ID, 'trigger']])
-driver.FindElement([[By.NAME, playerNames['deckerd']]])
-driver.DontFindElement([[By.NAME, playerNames['deckerd']], [By.ID, 'trigger']])
-driver.FindElement([[By.NAME, playerNames['moldavi']]])
-driver.DontFindElement([[By.NAME, playerNames['moldavi']], [By.ID, 'trigger']])
-driver.FindElement([[By.NAME, playerNames['drake']]])
-driver.DontFindElement([[By.NAME, playerNames['drake']], [By.ID, 'trigger']])
-driver.FindElement([[By.NAME, playerNames['zeke']]])
-driver.DontFindElement([[By.NAME, playerNames['zeke']], [By.ID, 'trigger']])
-driver.FindElement([[By.NAME, playerNames['jack']]])
-driver.DontFindElement([[By.NAME, playerNames['jack']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['zella']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['zella']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['deckerd']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['deckerd']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['moldavi']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['moldavi']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['drake']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['drake']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['zeke']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['zeke']], [By.ID, 'trigger']])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['jack']]])
+driver.DontFindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, playerNames['jack']], [By.ID, 'trigger']])
 
 ## Test admins can add, leave, and kick from global chat
 actingPlayer = 'zella' # admin human

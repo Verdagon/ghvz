@@ -48,25 +48,25 @@ driver.Click([[By.ID, 'allegianceFilter']])
 driver.Click([[By.ID, 'settingsForm'], [By.ID, 'done']])
 
 # Check the newly created chat room is opened
-driver.FindElement([[By.NAME, 'ChatRoom: %s' % newChatName]])
+driver.FindElement([[By.ID, 'chat-page-%s' % actingPlayerName], [By.NAME, newChatName]])
 
 # Add a zombie to chat
 toggleChatDrawer(driver, actingPlayerName, newChatName)
 xpathAdd = getPathToElement(actingPlayerName, 'a', 'chat-drawer-add')
 driver.Click([[By.XPATH, xpathAdd]])
-driver.FindElement([[By.ID, 'lookup']])
+driver.FindElement([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup']])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], playerNames['drake'])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], Keys.RETURN)
 
 # Check drawer to see that zombie was added
-driver.FindElement([[By.NAME, playerNames['drake']]])
+driver.FindElement([[By.TAG_NAME, 'ghvz-chat-page'], [By.NAME, playerNames['drake']]])
 
 # Make sure human can't be added to chat
 driver.Click([[By.XPATH, xpathAdd]])
-driver.FindElement([[By.ID, 'lookup']])
+driver.FindElement([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup']])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], playerNames['jack'])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], Keys.RETURN)
-driver.DontFindElement([[By.NAME, playerNames['jack']]])
+driver.DontFindElement([[By.TAG_NAME, 'ghvz-chat-page'], [By.NAME, playerNames['jack']]])
 
 # Close chat drawer before typing a message
 toggleChatDrawer(driver, actingPlayerName, newChatName)
@@ -80,7 +80,7 @@ driver.Click([[By.NAME, 'submit-%s' % newChatName], [By.XPATH, xpathSend]])
 # Check that other player can see the message
 driver.SwitchUser('drake')
 changeToPage(driver, '-' + newChatName)
-driver.ExpectContains([[By.NAME, 'message-%s-Whats our plan?' % newChatName], [By.CLASS_NAME, 'message-text']], 
+driver.ExpectContains([[By.TAG_NAME, 'ghvz-chat-page'], [By.NAME, 'message-%s-Whats our plan?' % newChatName], [By.CLASS_NAME, 'message-text']], 
 'Whats our plan?')
 
 # Switch back to original player
@@ -94,6 +94,6 @@ driver.Click([[By.ID, 'chat-page-' + actingPlayerName], [By.ID, 'kick-' + player
 driver.Click([[By.ID, 'chat-page-' + actingPlayerName], [By.ID, 'kickForm'], [By.ID, 'done']])
 
 # Confirm player was kicked
-driver.DontFindElement([[By.NAME, playerNames['drake']]])
+driver.DontFindElement([[By.TAG_NAME, 'ghvz-chat-page'], [By.NAME, playerNames['drake']]])
 
 driver.Quit()
