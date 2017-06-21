@@ -233,6 +233,7 @@
                     </paper-item> -->
                     <template is="dom-if" if="[[canRemove]]">
                       <paper-item 
+                        id$="kick-[[item.name]]"
                         on-tap="captureTap_" 
                         data-action="kick" 
                         data-player-id$="[[item.id]]">

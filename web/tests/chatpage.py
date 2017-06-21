@@ -22,17 +22,12 @@ def changeToPage(driver, drawerOption):
 def closeNotifications(driver):
   driver.Click([[By.NAME, 'close-notification']])
 
-def openChatDrawer(driver, actingPlayer, chatRoomName):
+def toggleChatDrawer(driver, actingPlayer, chatRoomName):
   xpathChatDrawerButton = getPathToElement(actingPlayer, 'paper-icon-button', 'chat-info-' + chatRoomName)
   driver.Click([[By.XPATH, xpathChatDrawerButton]])  
-
-def openChatDrawer(driver, actingPlayer, chatRoomName):
-  xpathChatDrawerButton = getPathToElement(actingPlayer, 'paper-icon-button', 'chat-info-' + chatRoomName)
-  driver.Click([[By.XPATH, xpathChatDrawerButton]])  
-
 
 # Start Test
-actingPlayer = 'zeke' # non-admin zombie
+actingPlayer = 'zeke' # non-admin human
 actingPlayerName = playerNames[actingPlayer]
 newChatName = 'No hoomans allowed'
 driver = setup.MakeDriver()
@@ -56,7 +51,7 @@ driver.Click([[By.ID, 'settingsForm'], [By.ID, 'done']])
 driver.FindElement([[By.NAME, 'ChatRoom: %s' % newChatName]])
 
 # Add a zombie to chat
-openChatDrawer(driver, actingPlayerName, newChatName)
+toggleChatDrawer(driver, actingPlayerName, newChatName)
 xpathAdd = getPathToElement(actingPlayerName, 'a', 'chat-drawer-add')
 driver.Click([[By.XPATH, xpathAdd]])
 driver.FindElement([[By.ID, 'lookup']])
@@ -72,5 +67,33 @@ driver.FindElement([[By.ID, 'lookup']])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], playerNames['jack'])
 driver.SendKeys([[By.TAG_NAME, 'ghvz-chat-page'], [By.ID, 'lookup'], [By.TAG_NAME, 'input']], Keys.RETURN)
 driver.DontFindElement([[By.NAME, playerNames['jack']]])
+
+# Close chat drawer before typing a message
+toggleChatDrawer(driver, actingPlayerName, newChatName)
+
+# Message the chat 
+xpathTextarea = getPathToElement(actingPlayerName, 'textarea', 'input-' + newChatName)
+xpathSend = getPathToElement(actingPlayerName, 'paper-button', 'submit-' + newChatName)
+driver.SendKeys([[By.NAME, 'input-%s' % newChatName], [By.XPATH, xpathTextarea]], 'Whats our plan?')
+driver.Click([[By.NAME, 'submit-%s' % newChatName], [By.XPATH, xpathSend]])
+
+# Check that other player can see the message
+driver.SwitchUser('drake')
+changeToPage(driver, '-' + newChatName)
+driver.ExpectContains([[By.NAME, 'message-%s-Whats our plan?' % newChatName], [By.CLASS_NAME, 'message-text']], 
+'Whats our plan?')
+
+# Switch back to original player
+driver.SwitchUser(actingPlayer)
+changeToPage(driver, '-' + newChatName)
+toggleChatDrawer(driver, actingPlayerName, newChatName)
+
+# Kick player from chat
+driver.Click([[By.ID, 'chat-page-' + actingPlayerName], [By.NAME, playerNames['drake']], [By.ID, 'trigger']])
+driver.Click([[By.ID, 'chat-page-' + actingPlayerName], [By.ID, 'kick-' + playerNames['drake']]])
+driver.Click([[By.ID, 'chat-page-' + actingPlayerName], [By.ID, 'kickForm'], [By.ID, 'done']])
+
+# Confirm player was kicked
+driver.DontFindElement([[By.NAME, playerNames['drake']]])
 
 driver.Quit()

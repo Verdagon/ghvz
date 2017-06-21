@@ -51,6 +51,7 @@
       },
 
       captureTap_(e) {
+        var dataset;
         if (e.target.classList.contains('drawer-item')) {
           let page = e.target.dataset.page;
           assert(page);

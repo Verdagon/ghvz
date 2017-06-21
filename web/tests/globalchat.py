@@ -76,15 +76,14 @@ driver.DontFindElement([[By.NAME, playerNames['zeke']], [By.ID, 'trigger']])
 driver.FindElement([[By.NAME, playerNames['jack']]])
 driver.DontFindElement([[By.NAME, playerNames['jack']], [By.ID, 'trigger']])
 
-# Test admins can add, leave, and kick from global chat
+## Test admins can add, leave, and kick from global chat
 actingPlayer = 'zella' # admin human
 actingPlayerName = playerNames[actingPlayer]
 
 # Switch to chat page and open drawer
 driver.SwitchUser(actingPlayer)
 closeNotifications(driver)
-driver.Click([[By.NAME, 'drawerChat']])
-driver.Click([[By.NAME, 'Global Chat']])
+changeToPage(driver, '-' + 'Global Chat')
 openChatDrawer(driver, actingPlayerName, 'Global Chat')
 
 # Check admin can add players
