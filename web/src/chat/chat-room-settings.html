@@ -113,10 +113,8 @@
               actingPlayerId: this.player.id,
             });
           }).then(() => {
-            this.fire('ghvz-set-path', {
-              inGame: true,
-              path: ['chat', chatRoomId],
-              replace: false,
+            this.fire('ghvz-change-to-new-chat', {
+              chatRoomId: chatRoomId,
             });
           });
         },
