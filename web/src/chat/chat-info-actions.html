@@ -101,11 +101,13 @@
             actingPlayerId: this.playerId,
             visible: false,
           });
-          this.fire('ghvz-set-path', {
-            inGame: true,
-            path: ['chat'],
-            replace: true,
-          });
+          if (this.isAdmin) {
+            this.fire('ghvz-set-path', {
+              inGame: true,
+              path: ['chat'],
+              replace: true,
+            });
+          }
         },
 
         kickFromChat_: function(playerId, game) {

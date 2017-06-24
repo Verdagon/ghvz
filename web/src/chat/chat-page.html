@@ -71,14 +71,15 @@
           if (chatRoomId) {
             this.$.chatRoomSelector.select(
                 this.game.chatRooms.find(chatRoom => {
-                 /* let visible;
+                  let visible;
                   let memberSetting = this.player.chatRoomMembershipsById[chatRoomId];
-                  if (!memberSetting && this.isAdmin) {
-                    visible = true;
-                  } else if (memberSetting) {
+                  if (memberSetting) {
                     visible = memberSetting.visible;
-                  } */
-                  return chatRoom.id == chatRoomId;
+                  }
+                  if (this.isAdmin) {
+                    visible = true;
+                  }
+                  return chatRoom.id == chatRoomId && visible;
                 }));
             if (this.$.chatRoomSelector.selected != null) {
               return;
