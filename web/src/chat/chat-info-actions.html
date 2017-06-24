@@ -78,7 +78,11 @@
         },
 
         leaveChat_: function() {
-          this.$.leaveForm.open();
+          if (this.chatRoom.withAdmins) {
+            this.hideChat_();
+          } else {
+            this.$.leaveForm.open();
+          }
         },
 
         onConfirmLeave_: function(e) {
@@ -87,6 +91,20 @@
             groupId: this.chatRoom.accessGroupId,
             actingPlayerId: this.playerId,
             playerToRemoveId: this.playerId,
+          });
+        },
+
+        hideChat_: function() {
+          this.bridge.updateChatRoomMembership({
+            gameId: this.game.id, 
+            chatRoomId: this.chatRoom.id,
+            actingPlayerId: this.playerId,
+            visible: false,
+          });
+          this.fire('ghvz-set-path', {
+            inGame: true,
+            path: ['chat'],
+            replace: true,
           });
         },
 

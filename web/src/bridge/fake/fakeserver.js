@@ -224,7 +224,7 @@ class FakeServer {
     this.writer.insert(
         this.reader.getPlayerChatRoomMembershipPath(gameId, playerId, null),
         null,
-        new Model.PlayerChatRoomMembership(chatRoomId, {chatRoomId: chatRoomId}));
+        new Model.PlayerChatRoomMembership(chatRoomId, {chatRoomId: chatRoomId, visible: true}));
   }
 
   addPlayerToMission_(gameId, missionId, playerId) {
@@ -271,6 +271,22 @@ class FakeServer {
           })));
     } else {
       throw 'Can\'t send message to chat room without membership';
+    }
+  }
+
+  updateChatRoomMembership(args) {
+    let {chatRoomId, actingPlayerId} = args;
+    let playerId = actingPlayerId;
+    let gameId = this.reader.getGameIdForPlayerId(playerId);
+    let game = this.database.gamesById[gameId];
+    let player = game.playersById[playerId];
+
+    let playerChatRoomMembershipPath = this.reader.getPlayerChatRoomMembershipPath(gameId, playerId, chatRoomId);
+
+    for (let argName in args) {
+      this.writer.set(
+          playerChatRoomMembershipPath.concat([argName]),
+          args[argName]);
     }
   }
 

@@ -40,6 +40,8 @@
             type: Boolean,
             value: false,
           },
+
+          
         },
 
         listeners: {
@@ -50,6 +52,7 @@
           'onChatRoomIdChange_(chatRoomId, game.chatRooms, game.chatRoomsById)',
           'onChatRoomNameChange_(chatRoom.name, isAttached)',
           'onMessageReceived_(chatRoom.messages.length)',
+          'onChatRoomMembershipsChanged_(currentPlayer.chatRoomMemberships.*)',
         ],
 
         locationEnabled(isMobile) {
@@ -74,6 +77,9 @@
 
         onChatRoomNameChange_: function() {
           this.fire('ghvz-set-card-header-text', { headerText: this.chatRoom.name });
+        },
+
+        onChatRoomMembershipsChanged_() {
         },
 
         onMessageReceived_() {
