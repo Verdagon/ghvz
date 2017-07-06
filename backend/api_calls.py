@@ -37,6 +37,7 @@ import constants
 import db_helpers as helpers
 from db_helpers import Optional
 import config
+import notifications
 
 
 InvalidInputError = helpers.InvalidInputError
@@ -682,6 +683,7 @@ def SendChatMessage(request, game_state):
       n['queuedNotificationId'] = '%s%s' % (n['queuedNotificationId'], player)
       n['playerId'] = players_in_room[player]
       helpers.QueueNotification(game_state, n)
+    notifications.ExecuteNotifications(None, game_state)
   else:
     tokens = request['message'].split(' ')
     for token in tokens:
@@ -693,6 +695,7 @@ def SendChatMessage(request, game_state):
         n['queuedNotificationId'] = '%s%s' % (n['queuedNotificationId'], name)
         n['playerId'] = players_in_room[name]
         helpers.QueueNotification(game_state, n)
+    notifications.ExecuteNotifications(None, game_state)
 
   put_data = {
     'playerId': request['playerId'],
@@ -1630,6 +1633,7 @@ def SendNotification(request, game_state):
     raise InvalidInputError('sendTime must not be in the past!')
 
   helpers.QueueNotification(game_state, request)
+  notifications.ExecuteNotifications(None, game_state)
 
 
 def UpdateNotification(request, game_state):
